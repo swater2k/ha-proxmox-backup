@@ -1,0 +1,72 @@
+"""The Proxmox Backup Server integration."""
+
+from __future__ import annotations
+
+from homeassistant.const import CONF_HOST, CONF_PORT, CONF_VERIFY_SSL, Platform
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
+from .api import PbsClient
+from .const import CONF_TOKEN_ID, CONF_TOKEN_SECRET, DEFAULT_PORT, DEFAULT_VERIFY_SSL
+from .coordinator import (
+    Capabilities,
+    PbsConfigEntry,
+    PbsFastCoordinator,
+    PbsMediumCoordinator,
+    PbsRuntimeData,
+    PbsSlowCoordinator,
+)
+
+PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR]
+
+
+async def async_setup_entry(hass: HomeAssistant, entry: PbsConfigEntry) -> bool:
+    """Set up Proxmox Backup Server from a config entry."""
+    session = async_get_clientsession(
+        hass, verify_ssl=entry.data.get(CONF_VERIFY_SSL, DEFAULT_VERIFY_SSL)
+    )
+    client = PbsClient(
+        session,
+        entry.data[CONF_HOST],
+        int(entry.data.get(CONF_PORT, DEFAULT_PORT)),
+        entry.data[CONF_TOKEN_ID],
+        entry.data[CONF_TOKEN_SECRET],
+    )
+    capabilities = Capabilities()
+
+    fast = PbsFastCoordinator(hass, entry, client, capabilities)
+    medium = PbsMediumCoordinator(hass, entry, client, capabilities)
+    slow = PbsSlowCoordinator(hass, entry, client, capabilities)
+
+    entry.runtime_data = PbsRuntimeData(
+        client=client,
+        capabilities=capabilities,
+        fast=fast,
+        medium=medium,
+        slow=slow,
+        root_id=entry.unique_id or entry.entry_id,
+    )
+
+    # The slow coordinator runs first: its version information becomes the
+    # sw_version of the device, which is read while the platforms are set up.
+    await slow.async_config_entry_first_refresh()
+    await fast.async_config_entry_first_refresh()
+    await medium.async_config_entry_first_refresh()
+
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    entry.async_on_unload(entry.add_update_listener(async_reload_entry))
+    return True
+
+
+async def async_unload_entry(hass: HomeAssistant, entry: PbsConfigEntry) -> bool:
+    """Unload a config entry."""
+    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+
+async def async_reload_entry(hass: HomeAssistant, entry: PbsConfigEntry) -> None:
+    """Reload the entry after the options changed.
+
+    Thresholds and the datastore selection decide which entities exist, so a
+    full reload is the only way to apply them consistently.
+    """
+    await hass.config_entries.async_reload(entry.entry_id)

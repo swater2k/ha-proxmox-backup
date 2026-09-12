@@ -1,0 +1,14 @@
+{
+  "domain": "proxmox_backup",
+  "name": "Proxmox Backup Server",
+  "codeowners": ["@swater2k"],
+  "config_flow": true,
+  "documentation": "https://github.com/swater2k/ha-proxmox-backup",
+  "integration_type": "service",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/swater2k/ha-proxmox-backup/issues",
+  "loggers": ["custom_components.proxmox_backup"],
+  "quality_scale": "bronze",
+  "requirements": [],
+  "version": "0.1.0"
+}

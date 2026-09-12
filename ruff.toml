@@ -1,0 +1,19 @@
+target-version = "py313"
+line-length = 88
+
+[lint]
+select = [
+    "A", "ASYNC", "B", "C4", "D", "E", "F", "I", "N", "PGH", "PIE",
+    "PL", "RET", "RUF", "SIM", "SLF", "T20", "TRY", "UP", "W",
+]
+ignore = [
+    "D203", "D213",
+    "PLR0913",  # entity descriptions legitimately take many arguments
+    "TRY003",   # messages are short and local
+]
+
+[lint.per-file-ignores]
+"scripts/*" = ["T20", "D"]
+
+[lint.isort]
+known-first-party = ["custom_components"]

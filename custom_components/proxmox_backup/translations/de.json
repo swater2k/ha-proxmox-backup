@@ -1,0 +1,154 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Mit Proxmox Backup Server verbinden",
+        "description": "Lege in PBS einen API-Token an und vergib die passende ACL auf dem Benutzer *und* auf dem Token selbst.",
+        "data": {
+          "host": "Host",
+          "port": "Port",
+          "token_id": "Token-ID",
+          "token_secret": "Token-Secret",
+          "verify_ssl": "TLS-Zertifikat prüfen"
+        },
+        "data_description": {
+          "token_id": "Vollständige Token-ID, zum Beispiel ha@pbs!homeassistant",
+          "verify_ssl": "Für das selbstsignierte Zertifikat von PBS ausschalten."
+        }
+      },
+      "datastores": {
+        "title": "Datastores auswählen",
+        "description": "Nur für die ausgewählten Datastores werden Entitäten angelegt.",
+        "data": {
+          "datastores": "Datastores"
+        }
+      },
+      "reauth_confirm": {
+        "title": "API-Token erneuern",
+        "description": "Der Proxmox Backup Server auf {host} hat den gespeicherten Token abgelehnt.",
+        "data": {
+          "token_id": "Token-ID",
+          "token_secret": "Token-Secret"
+        }
+      },
+      "reconfigure": {
+        "title": "Verbindung ändern",
+        "data": {
+          "host": "Host",
+          "port": "Port",
+          "token_id": "Token-ID",
+          "token_secret": "Token-Secret",
+          "verify_ssl": "TLS-Zertifikat prüfen"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Der Host ist nicht erreichbar. Prüfe Adresse, Port und ob die TLS-Prüfung ausgeschaltet sein muss.",
+      "invalid_auth": "Der Token wurde abgelehnt. Prüfe Token-ID und Secret.",
+      "insufficient_permissions": "Der Token ist gültig, hat aber keinen Lesezugriff. Vergib DatastoreAdmin (oder DatastoreAudit) auf dem Datastore.",
+      "no_datastores": "Die Anmeldung hat geklappt, es ist aber kein Datastore sichtbar. PBS bildet die Schnittmenge aus Benutzer- und Token-Rechten, die ACL muss also zweimal gesetzt werden: einmal für ha@pbs und einmal für ha@pbs!homeassistant.",
+      "unknown": "Unerwarteter Fehler. Details stehen im Home-Assistant-Log."
+    },
+    "abort": {
+      "already_configured": "Dieser Proxmox Backup Server ist bereits eingerichtet.",
+      "reauth_successful": "Der Token wurde erneuert.",
+      "reconfigure_successful": "Die Verbindung wurde aktualisiert.",
+      "wrong_server": "Diese Zugangsdaten gehören zu einem anderen Proxmox Backup Server."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Optionen",
+        "data": {
+          "datastores": "Überwachte Datastores",
+          "stale_days": "Backup gilt als veraltet nach (Tagen)",
+          "usage_warning": "Belegung Warnung (%)",
+          "usage_critical": "Belegung kritisch (%)",
+          "gc_warning_days": "Warnung ohne Garbage Collection nach (Tagen)",
+          "allow_write": "Schreibaktionen erlauben",
+          "allow_destructive": "Löschende Aktionen erlauben"
+        },
+        "data_description": {
+          "allow_write": "Schaltet Garbage Collection, Verify, Job-Starts und Wartungsmodus frei. Standardmäßig aus.",
+          "allow_destructive": "Schaltet Prune und Forget frei. Diese löschen Backups unwiderruflich."
+        }
+      }
+    },
+    "error": {
+      "destructive_needs_write": "Löschende Aktionen setzen voraus, dass auch Schreibaktionen erlaubt sind.",
+      "thresholds_out_of_order": "Der kritische Schwellwert muss über dem Warn-Schwellwert liegen."
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "connectivity": { "name": "Verbindung" },
+      "service_problem": { "name": "Dienstproblem" },
+      "disk_problem": { "name": "Plattenproblem" },
+      "gc_running": { "name": "Garbage Collection läuft" },
+      "maintenance": { "name": "Wartungsmodus" },
+      "datastore_problem": { "name": "Problem" }
+    },
+    "sensor": {
+      "cpu_usage": { "name": "CPU-Auslastung" },
+      "io_wait": { "name": "IO-Wait" },
+      "load_1m": { "name": "Last 1 Min" },
+      "load_5m": { "name": "Last 5 Min" },
+      "load_15m": { "name": "Last 15 Min" },
+      "memory_usage": { "name": "RAM-Auslastung" },
+      "memory_used": { "name": "RAM belegt" },
+      "memory_total": { "name": "RAM gesamt" },
+      "swap_usage": { "name": "Swap-Auslastung" },
+      "root_usage": { "name": "Root-Dateisystem belegt" },
+      "root_free": { "name": "Root-Dateisystem frei" },
+      "boot_time": { "name": "Startzeit" },
+      "running_tasks": { "name": "Laufende Tasks" },
+      "failed_tasks_24h": { "name": "Fehlgeschlagene Tasks 24 h" },
+      "failed_tasks_7d": { "name": "Fehlgeschlagene Tasks 7 d" },
+      "last_failed_task": { "name": "Letzter fehlgeschlagener Task" },
+      "version": { "name": "Version" },
+      "updates_available": { "name": "Verfügbare Updates" },
+      "certificate_expiry": { "name": "Zertifikat läuft ab" },
+      "subscription_status": {
+        "name": "Subscription",
+        "state": {
+          "active": "Aktiv",
+          "expired": "Abgelaufen",
+          "invalid": "Ungültig",
+          "notfound": "Keine",
+          "suspended": "Ausgesetzt",
+          "unknown": "Unbekannt"
+        }
+      },
+      "used_space": { "name": "Belegter Speicher" },
+      "free_space": { "name": "Freier Speicher" },
+      "total_space": { "name": "Gesamtspeicher" },
+      "usage": { "name": "Belegung" },
+      "estimated_full": { "name": "Voraussichtlich voll" },
+      "active_reads": { "name": "Aktive Lesevorgänge" },
+      "active_writes": { "name": "Aktive Schreibvorgänge" },
+      "group_count": { "name": "Backup-Gruppen" },
+      "snapshot_count": { "name": "Snapshots" },
+      "verified_snapshots": { "name": "Geprüfte Snapshots" },
+      "failed_verifications": { "name": "Fehlgeschlagene Prüfungen" },
+      "unverified_snapshots": { "name": "Ungeprüfte Snapshots" },
+      "oldest_snapshot": { "name": "Ältester Snapshot" },
+      "newest_snapshot": { "name": "Neuester Snapshot" },
+      "deduplication_factor": { "name": "Deduplizierungsfaktor" },
+      "gc_last_run": { "name": "Garbage Collection zuletzt" },
+      "gc_state": {
+        "name": "Garbage-Collection-Status",
+        "state": {
+          "ok": "OK",
+          "error": "Fehler",
+          "running": "Läuft",
+          "unknown": "Unbekannt"
+        }
+      },
+      "gc_duration": { "name": "Garbage-Collection-Dauer" },
+      "gc_removed": { "name": "Garbage Collection freigegeben" },
+      "gc_pending": { "name": "Garbage Collection ausstehend" },
+      "gc_schedule": { "name": "Garbage-Collection-Zeitplan" }
+    }
+  }
+}

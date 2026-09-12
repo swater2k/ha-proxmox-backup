@@ -1,0 +1,68 @@
+rules:
+  # Bronze
+  config-flow: done
+  test-before-configure: done
+  unique-config-entry: done
+  config-flow-test-coverage: todo # milestone 5
+  runtime-data: done
+  test-before-setup: done
+  appropriate-polling: done # 60 s / 5 min / 6 h, split by rate of change
+  entity-unique-id: done
+  has-entity-name: done
+  entity-event-setup:
+    status: exempt
+    comment: Polling only, no event subscriptions.
+  dependency-transparency:
+    status: exempt
+    comment: No third party requirements, the API client ships with the integration.
+  action-setup: todo # milestone 3
+  common-modules: done
+  docs-high-level-description: done
+  docs-installation-instructions: done
+  docs-removal-instructions: done
+  docs-actions: todo # milestone 3
+  brands: todo # needs a PR against home-assistant/brands
+
+  # Silver
+  config-entry-unloading: done
+  log-when-unavailable: done # capability denials are logged once
+  entity-unavailable: done
+  action-exceptions: todo # milestone 3
+  reauthentication-flow: done
+  parallel-updates: done
+  test-coverage: todo # milestone 5
+  integration-owner: done
+  docs-installation-parameters: done
+  docs-configuration-parameters: done
+
+  # Gold
+  entity-translations: done
+  entity-device-class: done
+  devices: done
+  entity-category: done
+  entity-disabled-by-default: done
+  discovery:
+    status: exempt
+    comment: PBS needs an API token, there is nothing useful to discover.
+  discovery-update-info:
+    status: exempt
+    comment: See discovery.
+  docs-data-update: todo
+  docs-examples: todo
+  docs-known-limitations: done # PBS cannot start backups, documented in the README
+  docs-supported-devices: done
+  docs-supported-functions: done
+  docs-troubleshooting: done
+  docs-use-cases: done
+  dynamic-devices: todo # milestone 2, backup groups appear at runtime
+  diagnostics: done
+  exception-translations: todo
+  icon-translations: todo # milestone 4
+  reconfiguration-flow: done
+  repair-issues: todo # milestone 4, missing ACL should raise a repair
+  stale-devices: todo # milestone 2
+
+  # Platinum
+  async-dependency: done
+  inject-websession: done
+  strict-typing: todo

@@ -1,0 +1,154 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to Proxmox Backup Server",
+        "description": "Create an API token in PBS and grant it the matching ACL on the user *and* on the token itself.",
+        "data": {
+          "host": "Host",
+          "port": "Port",
+          "token_id": "Token ID",
+          "token_secret": "Token secret",
+          "verify_ssl": "Verify TLS certificate"
+        },
+        "data_description": {
+          "token_id": "Full token ID, for example ha@pbs!homeassistant",
+          "verify_ssl": "Turn this off for the self-signed certificate PBS ships with."
+        }
+      },
+      "datastores": {
+        "title": "Select datastores",
+        "description": "Only the selected datastores get entities.",
+        "data": {
+          "datastores": "Datastores"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Renew the API token",
+        "description": "Proxmox Backup Server on {host} rejected the stored token.",
+        "data": {
+          "token_id": "Token ID",
+          "token_secret": "Token secret"
+        }
+      },
+      "reconfigure": {
+        "title": "Change connection",
+        "data": {
+          "host": "Host",
+          "port": "Port",
+          "token_id": "Token ID",
+          "token_secret": "Token secret",
+          "verify_ssl": "Verify TLS certificate"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot reach the host. Check address, port and whether TLS verification should be off.",
+      "invalid_auth": "The token was rejected. Check the token ID and the secret.",
+      "insufficient_permissions": "The token is valid but has no read access. Grant it DatastoreAdmin (or DatastoreAudit) on the datastore.",
+      "no_datastores": "Authentication worked but no datastore is visible. PBS intersects user and token privileges, so the ACL must be set on both: once for ha@pbs and once for ha@pbs!homeassistant.",
+      "unknown": "Unexpected error. See the Home Assistant log for details."
+    },
+    "abort": {
+      "already_configured": "This Proxmox Backup Server is already set up.",
+      "reauth_successful": "The token was renewed.",
+      "reconfigure_successful": "The connection was updated.",
+      "wrong_server": "These credentials belong to a different Proxmox Backup Server."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options",
+        "data": {
+          "datastores": "Monitored datastores",
+          "stale_days": "Consider a backup stale after (days)",
+          "usage_warning": "Usage warning (%)",
+          "usage_critical": "Usage critical (%)",
+          "gc_warning_days": "Warn without garbage collection after (days)",
+          "allow_write": "Allow write actions",
+          "allow_destructive": "Allow destructive actions"
+        },
+        "data_description": {
+          "allow_write": "Enables garbage collection, verify, job runs and maintenance mode. Off by default.",
+          "allow_destructive": "Enables prune and forget. These delete backups irreversibly."
+        }
+      }
+    },
+    "error": {
+      "destructive_needs_write": "Destructive actions also require write actions to be allowed.",
+      "thresholds_out_of_order": "The critical threshold must be higher than the warning threshold."
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "connectivity": { "name": "Connection" },
+      "service_problem": { "name": "Service problem" },
+      "disk_problem": { "name": "Disk problem" },
+      "gc_running": { "name": "Garbage collection running" },
+      "maintenance": { "name": "Maintenance mode" },
+      "datastore_problem": { "name": "Problem" }
+    },
+    "sensor": {
+      "cpu_usage": { "name": "CPU usage" },
+      "io_wait": { "name": "IO wait" },
+      "load_1m": { "name": "Load 1 min" },
+      "load_5m": { "name": "Load 5 min" },
+      "load_15m": { "name": "Load 15 min" },
+      "memory_usage": { "name": "Memory usage" },
+      "memory_used": { "name": "Memory used" },
+      "memory_total": { "name": "Memory total" },
+      "swap_usage": { "name": "Swap usage" },
+      "root_usage": { "name": "Root filesystem usage" },
+      "root_free": { "name": "Root filesystem free" },
+      "boot_time": { "name": "Boot time" },
+      "running_tasks": { "name": "Running tasks" },
+      "failed_tasks_24h": { "name": "Failed tasks 24 h" },
+      "failed_tasks_7d": { "name": "Failed tasks 7 d" },
+      "last_failed_task": { "name": "Last failed task" },
+      "version": { "name": "Version" },
+      "updates_available": { "name": "Available updates" },
+      "certificate_expiry": { "name": "Certificate expiry" },
+      "subscription_status": {
+        "name": "Subscription",
+        "state": {
+          "active": "Active",
+          "expired": "Expired",
+          "invalid": "Invalid",
+          "notfound": "None",
+          "suspended": "Suspended",
+          "unknown": "Unknown"
+        }
+      },
+      "used_space": { "name": "Used space" },
+      "free_space": { "name": "Free space" },
+      "total_space": { "name": "Total space" },
+      "usage": { "name": "Usage" },
+      "estimated_full": { "name": "Estimated full" },
+      "active_reads": { "name": "Active reads" },
+      "active_writes": { "name": "Active writes" },
+      "group_count": { "name": "Backup groups" },
+      "snapshot_count": { "name": "Snapshots" },
+      "verified_snapshots": { "name": "Verified snapshots" },
+      "failed_verifications": { "name": "Failed verifications" },
+      "unverified_snapshots": { "name": "Unverified snapshots" },
+      "oldest_snapshot": { "name": "Oldest snapshot" },
+      "newest_snapshot": { "name": "Newest snapshot" },
+      "deduplication_factor": { "name": "Deduplication factor" },
+      "gc_last_run": { "name": "Garbage collection last run" },
+      "gc_state": {
+        "name": "Garbage collection state",
+        "state": {
+          "ok": "OK",
+          "error": "Error",
+          "running": "Running",
+          "unknown": "Unknown"
+        }
+      },
+      "gc_duration": { "name": "Garbage collection duration" },
+      "gc_removed": { "name": "Garbage collection removed" },
+      "gc_pending": { "name": "Garbage collection pending" },
+      "gc_schedule": { "name": "Garbage collection schedule" }
+    }
+  }
+}
