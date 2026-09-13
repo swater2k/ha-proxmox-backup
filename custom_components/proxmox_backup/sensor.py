@@ -40,7 +40,7 @@ SUBSCRIPTION_STATES = [
     "suspended",
     "unknown",
 ]
-GC_STATES = ["ok", "error", "running", "unknown"]
+GC_STATES = ["ok", "error", "unknown"]
 
 # Boot time is derived from an uptime counter, so it jitters by a second on
 # every poll. Only publish a new value when the drift is larger than this.
@@ -92,6 +92,15 @@ def _config(data: MediumData, store: str) -> Any:
     """Return the configuration of a datastore, or None."""
     entry = data.datastores.get(store)
     return entry.config if entry else None
+
+
+def _schedule(data: MediumData, store: str) -> str | None:
+    """Return the GC schedule, preferring the GC endpoint over the config."""
+    gc = _gc(data, store)
+    if gc is not None and gc.schedule:
+        return gc.schedule
+    config = _config(data, store)
+    return config.gc_schedule if config else None
 
 
 def _subscription_state(data: SlowData) -> str:
@@ -503,8 +512,16 @@ DATASTORE_SENSORS: tuple[PbsDatastoreSensorDescription, ...] = (
         translation_key="gc_schedule",
         source="medium",
         entity_category=EntityCategory.DIAGNOSTIC,
-        available_fn=lambda data, store: _config(data, store) is not None,
-        value_fn=lambda data, store: _config(data, store).gc_schedule,
+        available_fn=lambda data, store: _schedule(data, store) is not None,
+        value_fn=_schedule,
+    ),
+    PbsDatastoreSensorDescription(
+        key="gc_next_run",
+        translation_key="gc_next_run",
+        source="medium",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        available_fn=lambda data, store: _gc(data, store) is not None,
+        value_fn=lambda data, store: _gc(data, store).next_run,
     ),
 )
 

@@ -196,6 +196,19 @@ class FastData:
     active: dict[str, ActiveOperations] = field(default_factory=dict)
     running_tasks: list[TaskInfo] = field(default_factory=list)
 
+    def task_running(self, worker_type: str, worker_id: str | None = None) -> bool:
+        """Return True when a task of that kind is currently in progress.
+
+        This is how "is garbage collection running" is answered. The GC status
+        endpoint cannot answer it: its UPID field describes the run that
+        finished last, not one in progress.
+        """
+        return any(
+            task.worker_type == worker_type
+            and (worker_id is None or task.worker_id_decoded == worker_id)
+            for task in self.running_tasks
+        )
+
 
 @dataclass(slots=True)
 class MediumData:

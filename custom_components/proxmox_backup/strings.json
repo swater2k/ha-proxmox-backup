@@ -82,33 +82,83 @@
   },
   "entity": {
     "binary_sensor": {
-      "connectivity": { "name": "Connection" },
-      "service_problem": { "name": "Service problem" },
-      "disk_problem": { "name": "Disk problem" },
-      "gc_running": { "name": "Garbage collection running" },
-      "maintenance": { "name": "Maintenance mode" },
-      "datastore_problem": { "name": "Problem" }
+      "connectivity": {
+        "name": "Connection"
+      },
+      "service_problem": {
+        "name": "Service problem"
+      },
+      "disk_problem": {
+        "name": "Disk problem"
+      },
+      "gc_running": {
+        "name": "Garbage collection running"
+      },
+      "maintenance": {
+        "name": "Maintenance mode"
+      },
+      "datastore_problem": {
+        "name": "Problem"
+      }
     },
     "sensor": {
-      "cpu_usage": { "name": "CPU usage" },
-      "io_wait": { "name": "IO wait" },
-      "load_1m": { "name": "Load 1 min" },
-      "load_5m": { "name": "Load 5 min" },
-      "load_15m": { "name": "Load 15 min" },
-      "memory_usage": { "name": "Memory usage" },
-      "memory_used": { "name": "Memory used" },
-      "memory_total": { "name": "Memory total" },
-      "swap_usage": { "name": "Swap usage" },
-      "root_usage": { "name": "Root filesystem usage" },
-      "root_free": { "name": "Root filesystem free" },
-      "boot_time": { "name": "Boot time" },
-      "running_tasks": { "name": "Running tasks" },
-      "failed_tasks_24h": { "name": "Failed tasks 24 h" },
-      "failed_tasks_7d": { "name": "Failed tasks 7 d" },
-      "last_failed_task": { "name": "Last failed task" },
-      "version": { "name": "Version" },
-      "updates_available": { "name": "Available updates" },
-      "certificate_expiry": { "name": "Certificate expiry" },
+      "cpu_usage": {
+        "name": "CPU usage"
+      },
+      "io_wait": {
+        "name": "IO wait"
+      },
+      "load_1m": {
+        "name": "Load 1 min"
+      },
+      "load_5m": {
+        "name": "Load 5 min"
+      },
+      "load_15m": {
+        "name": "Load 15 min"
+      },
+      "memory_usage": {
+        "name": "Memory usage"
+      },
+      "memory_used": {
+        "name": "Memory used"
+      },
+      "memory_total": {
+        "name": "Memory total"
+      },
+      "swap_usage": {
+        "name": "Swap usage"
+      },
+      "root_usage": {
+        "name": "Root filesystem usage"
+      },
+      "root_free": {
+        "name": "Root filesystem free"
+      },
+      "boot_time": {
+        "name": "Boot time"
+      },
+      "running_tasks": {
+        "name": "Running tasks"
+      },
+      "failed_tasks_24h": {
+        "name": "Failed tasks 24 h"
+      },
+      "failed_tasks_7d": {
+        "name": "Failed tasks 7 d"
+      },
+      "last_failed_task": {
+        "name": "Last failed task"
+      },
+      "version": {
+        "name": "Version"
+      },
+      "updates_available": {
+        "name": "Available updates"
+      },
+      "certificate_expiry": {
+        "name": "Certificate expiry"
+      },
       "subscription_status": {
         "name": "Subscription",
         "state": {
@@ -120,35 +170,77 @@
           "unknown": "Unknown"
         }
       },
-      "used_space": { "name": "Used space" },
-      "free_space": { "name": "Free space" },
-      "total_space": { "name": "Total space" },
-      "usage": { "name": "Usage" },
-      "estimated_full": { "name": "Estimated full" },
-      "active_reads": { "name": "Active reads" },
-      "active_writes": { "name": "Active writes" },
-      "group_count": { "name": "Backup groups" },
-      "snapshot_count": { "name": "Snapshots" },
-      "verified_snapshots": { "name": "Verified snapshots" },
-      "failed_verifications": { "name": "Failed verifications" },
-      "unverified_snapshots": { "name": "Unverified snapshots" },
-      "oldest_snapshot": { "name": "Oldest snapshot" },
-      "newest_snapshot": { "name": "Newest snapshot" },
-      "deduplication_factor": { "name": "Deduplication factor" },
-      "gc_last_run": { "name": "Garbage collection last run" },
+      "used_space": {
+        "name": "Used space"
+      },
+      "free_space": {
+        "name": "Free space"
+      },
+      "total_space": {
+        "name": "Total space"
+      },
+      "usage": {
+        "name": "Usage"
+      },
+      "estimated_full": {
+        "name": "Estimated full"
+      },
+      "active_reads": {
+        "name": "Active reads"
+      },
+      "active_writes": {
+        "name": "Active writes"
+      },
+      "group_count": {
+        "name": "Backup groups"
+      },
+      "snapshot_count": {
+        "name": "Snapshots"
+      },
+      "verified_snapshots": {
+        "name": "Verified snapshots"
+      },
+      "failed_verifications": {
+        "name": "Failed verifications"
+      },
+      "unverified_snapshots": {
+        "name": "Unverified snapshots"
+      },
+      "oldest_snapshot": {
+        "name": "Oldest snapshot"
+      },
+      "newest_snapshot": {
+        "name": "Newest snapshot"
+      },
+      "deduplication_factor": {
+        "name": "Deduplication factor"
+      },
+      "gc_last_run": {
+        "name": "Garbage collection last run"
+      },
+      "gc_next_run": {
+        "name": "Garbage collection next run"
+      },
       "gc_state": {
         "name": "Garbage collection state",
         "state": {
           "ok": "OK",
           "error": "Error",
-          "running": "Running",
           "unknown": "Unknown"
         }
       },
-      "gc_duration": { "name": "Garbage collection duration" },
-      "gc_removed": { "name": "Garbage collection removed" },
-      "gc_pending": { "name": "Garbage collection pending" },
-      "gc_schedule": { "name": "Garbage collection schedule" }
+      "gc_duration": {
+        "name": "Garbage collection duration"
+      },
+      "gc_removed": {
+        "name": "Garbage collection removed"
+      },
+      "gc_pending": {
+        "name": "Garbage collection pending"
+      },
+      "gc_schedule": {
+        "name": "Garbage collection schedule"
+      }
     }
   }
 }

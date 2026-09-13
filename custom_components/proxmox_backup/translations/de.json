@@ -82,33 +82,83 @@
   },
   "entity": {
     "binary_sensor": {
-      "connectivity": { "name": "Verbindung" },
-      "service_problem": { "name": "Dienstproblem" },
-      "disk_problem": { "name": "Plattenproblem" },
-      "gc_running": { "name": "Garbage Collection läuft" },
-      "maintenance": { "name": "Wartungsmodus" },
-      "datastore_problem": { "name": "Problem" }
+      "connectivity": {
+        "name": "Verbindung"
+      },
+      "service_problem": {
+        "name": "Dienstproblem"
+      },
+      "disk_problem": {
+        "name": "Plattenproblem"
+      },
+      "gc_running": {
+        "name": "Garbage Collection läuft"
+      },
+      "maintenance": {
+        "name": "Wartungsmodus"
+      },
+      "datastore_problem": {
+        "name": "Problem"
+      }
     },
     "sensor": {
-      "cpu_usage": { "name": "CPU-Auslastung" },
-      "io_wait": { "name": "IO-Wait" },
-      "load_1m": { "name": "Last 1 Min" },
-      "load_5m": { "name": "Last 5 Min" },
-      "load_15m": { "name": "Last 15 Min" },
-      "memory_usage": { "name": "RAM-Auslastung" },
-      "memory_used": { "name": "RAM belegt" },
-      "memory_total": { "name": "RAM gesamt" },
-      "swap_usage": { "name": "Swap-Auslastung" },
-      "root_usage": { "name": "Root-Dateisystem belegt" },
-      "root_free": { "name": "Root-Dateisystem frei" },
-      "boot_time": { "name": "Startzeit" },
-      "running_tasks": { "name": "Laufende Tasks" },
-      "failed_tasks_24h": { "name": "Fehlgeschlagene Tasks 24 h" },
-      "failed_tasks_7d": { "name": "Fehlgeschlagene Tasks 7 d" },
-      "last_failed_task": { "name": "Letzter fehlgeschlagener Task" },
-      "version": { "name": "Version" },
-      "updates_available": { "name": "Verfügbare Updates" },
-      "certificate_expiry": { "name": "Zertifikat läuft ab" },
+      "cpu_usage": {
+        "name": "CPU-Auslastung"
+      },
+      "io_wait": {
+        "name": "IO-Wait"
+      },
+      "load_1m": {
+        "name": "Last 1 Min"
+      },
+      "load_5m": {
+        "name": "Last 5 Min"
+      },
+      "load_15m": {
+        "name": "Last 15 Min"
+      },
+      "memory_usage": {
+        "name": "RAM-Auslastung"
+      },
+      "memory_used": {
+        "name": "RAM belegt"
+      },
+      "memory_total": {
+        "name": "RAM gesamt"
+      },
+      "swap_usage": {
+        "name": "Swap-Auslastung"
+      },
+      "root_usage": {
+        "name": "Root-Dateisystem belegt"
+      },
+      "root_free": {
+        "name": "Root-Dateisystem frei"
+      },
+      "boot_time": {
+        "name": "Startzeit"
+      },
+      "running_tasks": {
+        "name": "Laufende Tasks"
+      },
+      "failed_tasks_24h": {
+        "name": "Fehlgeschlagene Tasks 24 h"
+      },
+      "failed_tasks_7d": {
+        "name": "Fehlgeschlagene Tasks 7 d"
+      },
+      "last_failed_task": {
+        "name": "Letzter fehlgeschlagener Task"
+      },
+      "version": {
+        "name": "Version"
+      },
+      "updates_available": {
+        "name": "Verfügbare Updates"
+      },
+      "certificate_expiry": {
+        "name": "Zertifikat läuft ab"
+      },
       "subscription_status": {
         "name": "Subscription",
         "state": {
@@ -120,35 +170,77 @@
           "unknown": "Unbekannt"
         }
       },
-      "used_space": { "name": "Belegter Speicher" },
-      "free_space": { "name": "Freier Speicher" },
-      "total_space": { "name": "Gesamtspeicher" },
-      "usage": { "name": "Belegung" },
-      "estimated_full": { "name": "Voraussichtlich voll" },
-      "active_reads": { "name": "Aktive Lesevorgänge" },
-      "active_writes": { "name": "Aktive Schreibvorgänge" },
-      "group_count": { "name": "Backup-Gruppen" },
-      "snapshot_count": { "name": "Snapshots" },
-      "verified_snapshots": { "name": "Geprüfte Snapshots" },
-      "failed_verifications": { "name": "Fehlgeschlagene Prüfungen" },
-      "unverified_snapshots": { "name": "Ungeprüfte Snapshots" },
-      "oldest_snapshot": { "name": "Ältester Snapshot" },
-      "newest_snapshot": { "name": "Neuester Snapshot" },
-      "deduplication_factor": { "name": "Deduplizierungsfaktor" },
-      "gc_last_run": { "name": "Garbage Collection zuletzt" },
+      "used_space": {
+        "name": "Belegter Speicher"
+      },
+      "free_space": {
+        "name": "Freier Speicher"
+      },
+      "total_space": {
+        "name": "Gesamtspeicher"
+      },
+      "usage": {
+        "name": "Belegung"
+      },
+      "estimated_full": {
+        "name": "Voraussichtlich voll"
+      },
+      "active_reads": {
+        "name": "Aktive Lesevorgänge"
+      },
+      "active_writes": {
+        "name": "Aktive Schreibvorgänge"
+      },
+      "group_count": {
+        "name": "Backup-Gruppen"
+      },
+      "snapshot_count": {
+        "name": "Snapshots"
+      },
+      "verified_snapshots": {
+        "name": "Geprüfte Snapshots"
+      },
+      "failed_verifications": {
+        "name": "Fehlgeschlagene Prüfungen"
+      },
+      "unverified_snapshots": {
+        "name": "Ungeprüfte Snapshots"
+      },
+      "oldest_snapshot": {
+        "name": "Ältester Snapshot"
+      },
+      "newest_snapshot": {
+        "name": "Neuester Snapshot"
+      },
+      "deduplication_factor": {
+        "name": "Deduplizierungsfaktor"
+      },
+      "gc_last_run": {
+        "name": "Garbage Collection zuletzt"
+      },
+      "gc_next_run": {
+        "name": "Garbage Collection nächster Lauf"
+      },
       "gc_state": {
         "name": "Garbage-Collection-Status",
         "state": {
           "ok": "OK",
           "error": "Fehler",
-          "running": "Läuft",
           "unknown": "Unbekannt"
         }
       },
-      "gc_duration": { "name": "Garbage-Collection-Dauer" },
-      "gc_removed": { "name": "Garbage Collection freigegeben" },
-      "gc_pending": { "name": "Garbage Collection ausstehend" },
-      "gc_schedule": { "name": "Garbage-Collection-Zeitplan" }
+      "gc_duration": {
+        "name": "Garbage-Collection-Dauer"
+      },
+      "gc_removed": {
+        "name": "Garbage Collection freigegeben"
+      },
+      "gc_pending": {
+        "name": "Garbage Collection ausstehend"
+      },
+      "gc_schedule": {
+        "name": "Garbage-Collection-Zeitplan"
+      }
     }
   }
 }

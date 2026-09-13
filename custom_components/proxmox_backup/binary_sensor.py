@@ -40,7 +40,7 @@ async def async_setup_entry(
     ]
 
     for store in runtime.medium.stores:
-        entities.append(PbsGcRunningSensor(entry, runtime.medium, store))
+        entities.append(PbsGcRunningSensor(entry, runtime.fast, store))
         entities.append(PbsMaintenanceSensor(entry, runtime.medium, store))
         entities.append(PbsDatastoreProblemSensor(entry, runtime.fast, store))
 
@@ -148,7 +148,12 @@ class PbsDiskProblemSensor(PbsInstanceEntity, BinarySensorEntity):
 
 
 class PbsGcRunningSensor(PbsDatastoreEntity, BinarySensorEntity):
-    """Whether a garbage collection run is in progress."""
+    """Whether a garbage collection run is in progress.
+
+    Bound to the fast coordinator and answered from the running task list. The
+    GC status endpoint keeps a UPID of the last finished run, which would make
+    this sensor permanently on.
+    """
 
     _attr_device_class = BinarySensorDeviceClass.RUNNING
     _attr_translation_key = "gc_running"
@@ -159,9 +164,8 @@ class PbsGcRunningSensor(PbsDatastoreEntity, BinarySensorEntity):
 
     @property
     def is_on(self) -> bool:
-        """Return True while GC runs."""
-        data = self.coordinator.data.datastores.get(self.store)
-        return bool(data and data.gc and data.gc.is_running)
+        """Return True while GC runs on this datastore."""
+        return self.coordinator.data.task_running("garbage_collection", self.store)
 
 
 class PbsMaintenanceSensor(PbsDatastoreEntity, BinarySensorEntity):

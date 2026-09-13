@@ -7,6 +7,7 @@ keys are kept in ``raw`` so diagnostics can show what the server really sent.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
@@ -56,6 +57,19 @@ def as_timestamp(value: Any) -> datetime | None:
         return datetime.fromtimestamp(seconds, tz=UTC)
     except (OverflowError, OSError, ValueError):
         return None
+
+
+_ESCAPE_RE = re.compile(r"\\+x([0-9a-fA-F]{2})")
+
+
+def unescape_worker_id(value: str | None) -> str | None:
+    r"""Decode the escaping PBS applies to worker ids inside a UPID.
+
+    A datastore called ``local-backup`` shows up as ``local\\x2dbackup``.
+    """
+    if not value:
+        return value
+    return _ESCAPE_RE.sub(lambda match: chr(int(match.group(1), 16)), value)
 
 
 def percentage(used: int | None, total: int | None) -> float | None:
@@ -315,9 +329,20 @@ class TaskInfo:
         )
 
     @property
+    def worker_id_decoded(self) -> str | None:
+        """Return the worker id with the UPID escaping removed."""
+        return unescape_worker_id(self.worker_id)
+
+    @property
     def is_running(self) -> bool:
-        """Return True while the task has no exit status yet."""
-        return self.status is None and self.end_time is None
+        """Return True while the task has not finished.
+
+        PBS reports a running task either without a status at all or with the
+        literal string ``running``, depending on the endpoint.
+        """
+        if self.end_time is not None:
+            return False
+        return self.status is None or self.status.lower() == "running"
 
     @property
     def is_failed(self) -> bool:
@@ -396,11 +421,12 @@ class DatastoreUsage:
 class GcStatus:
     """Answer of ``/admin/datastore/{store}/gc``."""
 
-    upid: str | None
-    last_run_upid: str | None
+    last_upid: str | None
     last_run_state: str | None
     last_run_endtime: datetime | None
     duration: int | None
+    schedule: str | None
+    next_run: datetime | None
     index_data_bytes: int | None
     disk_bytes: int | None
     removed_bytes: int | None
@@ -412,11 +438,15 @@ class GcStatus:
     def from_api(cls, raw: dict[str, Any]) -> GcStatus:
         """Build from the raw payload."""
         return cls(
-            upid=raw.get("upid"),
-            last_run_upid=raw.get("last-run-upid"),
+            # PBS 4.2 only sets "upid", and it points at the run that finished
+            # last: its UPID start time equals last-run-endtime minus duration.
+            # It is NOT an indicator that a run is currently in progress.
+            last_upid=raw.get("last-run-upid") or raw.get("upid"),
             last_run_state=raw.get("last-run-state"),
             last_run_endtime=as_timestamp(raw.get("last-run-endtime")),
             duration=as_int(raw.get("duration")),
+            schedule=raw.get("schedule"),
+            next_run=as_timestamp(raw.get("next-run")),
             index_data_bytes=as_int(raw.get("index-data-bytes")),
             disk_bytes=as_int(raw.get("disk-bytes")),
             removed_bytes=as_int(raw.get("removed-bytes")),
@@ -426,15 +456,12 @@ class GcStatus:
         )
 
     @property
-    def is_running(self) -> bool:
-        """Return True while a GC run is in progress."""
-        return bool(self.upid)
-
-    @property
     def state(self) -> str:
-        """Return a normalised state for the enum sensor."""
-        if self.is_running:
-            return "running"
+        """Return the outcome of the last finished run.
+
+        Whether a run is in progress is decided from the running task list, not
+        from here: the presence of a UPID says nothing about that.
+        """
         if not self.last_run_state:
             return "unknown"
         if self.last_run_state.startswith("OK"):
