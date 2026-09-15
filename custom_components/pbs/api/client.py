@@ -102,14 +102,14 @@ class PbsClient:
     ) -> Any:
         """Perform one API call and return the unwrapped ``data`` field."""
         url = f"{self._base}{path}"
-        clean_params = _clean(params)
+        clean_params = _clean_params(params)
         try:
             async with self._session.request(
                 method,
                 url,
                 headers=self._headers,
                 params=clean_params,
-                json=_clean(data) if data else None,
+                json=_clean_body(data) if data else None,
                 timeout=self._timeout,
             ) as response:
                 return await self._handle(response, path)
@@ -474,8 +474,12 @@ class PbsClient:
         return jobs
 
 
-def _clean(params: dict[str, Any] | None) -> dict[str, Any] | None:
-    """Drop None values and convert bools the way PBS expects them."""
+def _clean_params(params: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Prepare query parameters: drop None, send bools as 1 and 0.
+
+    A query string carries no types, so a bool has to become a number that PBS
+    parses back into one.
+    """
     if not params:
         return None
     cleaned: dict[str, Any] = {}
@@ -483,4 +487,16 @@ def _clean(params: dict[str, Any] | None) -> dict[str, Any] | None:
         if value is None:
             continue
         cleaned[key] = int(value) if isinstance(value, bool) else value
+    return cleaned or None
+
+
+def _clean_body(data: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Prepare a JSON body: drop None, leave every other type alone.
+
+    Unlike a query string, JSON has real types. PBS rejects a numeric 1 for a
+    boolean parameter with "Expected boolean value", so bools must stay bools.
+    """
+    if not data:
+        return None
+    cleaned = {key: value for key, value in data.items() if value is not None}
     return cleaned or None
