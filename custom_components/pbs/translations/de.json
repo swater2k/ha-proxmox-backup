@@ -99,6 +99,12 @@
       },
       "datastore_problem": {
         "name": "Problem"
+      },
+      "overall_problem": {
+        "name": "Problem"
+      },
+      "backup_stale": {
+        "name": "Backup veraltet"
       }
     },
     "sensor": {
@@ -240,6 +246,56 @@
       },
       "gc_schedule": {
         "name": "Garbage-Collection-Zeitplan"
+      },
+      "last_backup": {
+        "name": "Letztes Backup"
+      },
+      "backup_age": {
+        "name": "Backup-Alter"
+      },
+      "group_snapshots": {
+        "name": "Snapshots"
+      },
+      "group_size": {
+        "name": "Größe"
+      },
+      "group_verify_state": {
+        "name": "Verifizierung",
+        "state": {
+          "ok": "OK",
+          "partial": "Teilweise",
+          "failed": "Fehlgeschlagen",
+          "none": "Ungeprüft"
+        }
+      },
+      "group_owner": {
+        "name": "Besitzer"
+      },
+      "job_state": {
+        "name": "{kind}-Job {job}",
+        "state": {
+          "ok": "OK",
+          "error": "Fehler",
+          "disabled": "Deaktiviert",
+          "unknown": "Unbekannt"
+        }
+      },
+      "job_last_run": {
+        "name": "{kind}-Job {job} zuletzt"
+      },
+      "overall_status": {
+        "name": "Gesamtstatus",
+        "state": {
+          "ok": "OK",
+          "warning": "Warnung",
+          "critical": "Kritisch"
+        }
+      },
+      "stale_groups": {
+        "name": "Veraltete Backup-Gruppen"
+      },
+      "oldest_backup": {
+        "name": "Ältestes Backup"
       }
     }
   }

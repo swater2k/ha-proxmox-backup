@@ -54,13 +54,13 @@ rules:
   docs-supported-functions: done
   docs-troubleshooting: done
   docs-use-cases: done
-  dynamic-devices: todo # milestone 2, backup groups appear at runtime
+  dynamic-devices: done
   diagnostics: done
   exception-translations: todo
   icon-translations: todo # milestone 4
   reconfiguration-flow: done
   repair-issues: todo # milestone 4, missing ACL should raise a repair
-  stale-devices: todo # milestone 2
+  stale-devices: done
 
   # Platinum
   async-dependency: done

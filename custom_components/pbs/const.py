@@ -6,12 +6,13 @@ import logging
 from datetime import timedelta
 from typing import Final
 
-DOMAIN: Final = "proxmox_backup"
+DOMAIN: Final = "pbs"
 LOGGER: Final = logging.getLogger(__package__)
 
 MANUFACTURER: Final = "Proxmox"
 MODEL_SERVER: Final = "Proxmox Backup Server"
 MODEL_DATASTORE: Final = "PBS Datastore"
+MODEL_GROUP: Final = "PBS Backup Group"
 
 # configuration keys
 CONF_TOKEN_ID: Final = "token_id"

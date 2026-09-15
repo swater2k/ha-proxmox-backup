@@ -4,10 +4,17 @@ from __future__ import annotations
 
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_VERIFY_SSL, Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import PbsClient
-from .const import CONF_TOKEN_ID, CONF_TOKEN_SECRET, DEFAULT_PORT, DEFAULT_VERIFY_SSL
+from .const import (
+    CONF_TOKEN_ID,
+    CONF_TOKEN_SECRET,
+    DEFAULT_PORT,
+    DEFAULT_VERIFY_SSL,
+    DOMAIN,
+)
 from .coordinator import (
     Capabilities,
     PbsConfigEntry,
@@ -70,3 +77,28 @@ async def async_reload_entry(hass: HomeAssistant, entry: PbsConfigEntry) -> None
     full reload is the only way to apply them consistently.
     """
     await hass.config_entries.async_reload(entry.entry_id)
+
+
+async def async_remove_config_entry_device(
+    hass: HomeAssistant, entry: PbsConfigEntry, device: dr.DeviceEntry
+) -> bool:
+    """Allow deleting devices for datastores or backup groups that are gone.
+
+    A guest that is decommissioned leaves its group behind in Home Assistant
+    until the user removes it. Deletion is only permitted once the device no
+    longer appears in the current data, so a device is never removed while PBS
+    still knows about it.
+    """
+    runtime = entry.runtime_data
+    medium = runtime.medium.data
+    alive = {runtime.root_id}
+    if medium is not None:
+        for store, data in medium.datastores.items():
+            alive.add(f"{runtime.root_id}_datastore_{store}")
+            alive.update(f"{runtime.root_id}_group_{store}_{key}" for key in data.stats)
+
+    return not any(
+        identifier in alive
+        for domain, identifier in device.identifiers
+        if domain == DOMAIN
+    )

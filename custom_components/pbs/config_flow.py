@@ -117,16 +117,12 @@ async def validate_connection(hass, data: Mapping[str, Any]) -> dict[str, Any]:
     if not datastores:
         raise NoDatastoresError
 
-    fingerprint: str | None = None
-    try:
-        fingerprint = (await client.get_node_status()).fingerprint
-    except PbsError as err:
-        # Not fatal: the fingerprint is only a nicer unique id. A token without
-        # Audit on /system still gives a perfectly usable integration.
-        LOGGER.debug("Could not read the node fingerprint: %s", err)
-
+    # Deliberately host:port and not the node fingerprint: the fingerprint is
+    # only readable with Audit on /system, so a token without it would produce
+    # a different unique id and the duplicate check would not catch a second
+    # setup of the same server. An IP change is handled by the reconfigure flow.
     return {
-        "unique_id": fingerprint or f"{data[CONF_HOST]}:{int(data[CONF_PORT])}",
+        "unique_id": f"{data[CONF_HOST]}:{int(data[CONF_PORT])}",
         "datastores": datastores,
         "version": version.full,
     }

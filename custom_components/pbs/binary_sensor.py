@@ -8,20 +8,13 @@ from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntity,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
-from homeassistant.util import dt as dt_util
 
-from .const import (
-    CAP_DISKS,
-    CAP_SERVICES,
-    CONF_GC_WARNING_DAYS,
-    CONF_USAGE_CRITICAL,
-    DEFAULT_GC_WARNING_DAYS,
-    DEFAULT_USAGE_CRITICAL,
-)
-from .coordinator import DatastoreData, PbsConfigEntry
-from .entity import PbsDatastoreEntity, PbsInstanceEntity
+from . import health
+from .const import CAP_DISKS, CAP_SERVICES, CONF_STALE_DAYS, DEFAULT_STALE_DAYS
+from .coordinator import GroupStats, PbsConfigEntry
+from .entity import PbsDatastoreEntity, PbsGroupEntity, PbsInstanceEntity
 
 PARALLEL_UPDATES = 0
 
@@ -37,6 +30,7 @@ async def async_setup_entry(
         PbsConnectivitySensor(entry, runtime.fast),
         PbsServiceProblemSensor(entry, runtime.slow),
         PbsDiskProblemSensor(entry, runtime.slow),
+        PbsOverallProblemSensor(entry, runtime.medium),
     ]
 
     for store in runtime.medium.stores:
@@ -45,6 +39,28 @@ async def async_setup_entry(
         entities.append(PbsDatastoreProblemSensor(entry, runtime.fast, store))
 
     async_add_entities(entities)
+
+    known: set[tuple[str, str]] = set()
+
+    @callback
+    def _async_add_dynamic() -> None:
+        """Add a staleness sensor for every backup group PBS reports."""
+        medium = runtime.medium.data
+        if medium is None:
+            return
+        new: list[BinarySensorEntity] = []
+        for store, data in medium.datastores.items():
+            for stats in data.stats.values():
+                ident = (store, stats.key)
+                if ident in known:
+                    continue
+                known.add(ident)
+                new.append(PbsBackupStaleSensor(entry, runtime.medium, store, stats))
+        if new:
+            async_add_entities(new)
+
+    _async_add_dynamic()
+    entry.async_on_unload(runtime.medium.async_add_listener(_async_add_dynamic))
 
 
 class PbsConnectivitySensor(PbsInstanceEntity, BinarySensorEntity):
@@ -147,6 +163,46 @@ class PbsDiskProblemSensor(PbsInstanceEntity, BinarySensorEntity):
         }
 
 
+class PbsOverallProblemSensor(PbsInstanceEntity, BinarySensorEntity):
+    """Whether anything at all is wrong with this PBS.
+
+    The counterpart to the overall status sensor, shaped for automations: it
+    turns on for warnings as well as critical findings, and names them in an
+    attribute.
+    """
+
+    _attr_device_class = BinarySensorDeviceClass.PROBLEM
+    _attr_translation_key = "overall_problem"
+
+    def __init__(self, entry: PbsConfigEntry, coordinator) -> None:
+        """Set up the overall problem sensor."""
+        super().__init__(entry, coordinator, "overall_problem")
+
+    def _findings(self) -> list[health.Finding]:
+        """Collect every current finding across all three coordinators."""
+        runtime = self.entry.runtime_data
+        return health.instance_findings(
+            runtime.fast.data,
+            runtime.medium.data,
+            runtime.slow.data,
+            dict(self.entry.options),
+        )
+
+    @property
+    def is_on(self) -> bool:
+        """Return True when at least one finding applies."""
+        return bool(self._findings())
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Expose the findings and the worst severity among them."""
+        findings = self._findings()
+        return {
+            "status": health.worst(findings),
+            "findings": [finding.message for finding in findings],
+        }
+
+
 class PbsGcRunningSensor(PbsDatastoreEntity, BinarySensorEntity):
     """Whether a garbage collection run is in progress.
 
@@ -195,9 +251,8 @@ class PbsDatastoreProblemSensor(PbsDatastoreEntity, BinarySensorEntity):
     """Aggregated problem state of one datastore.
 
     Bound to the fast coordinator because the usage thresholds should react
-    quickly; the slower GC and verify facts are read from the medium
-    coordinator on the side. The list of reasons is exposed as an attribute so a
-    notification can say what is actually wrong.
+    quickly; the slower garbage collection and verification facts are read from
+    the medium coordinator on the side.
     """
 
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
@@ -207,49 +262,60 @@ class PbsDatastoreProblemSensor(PbsDatastoreEntity, BinarySensorEntity):
         """Set up the datastore problem sensor."""
         super().__init__(entry, coordinator, store, "problem")
 
-    def _reasons(self) -> list[str]:
-        """Collect every reason this datastore is considered unhealthy."""
-        options = self.entry.options
-        reasons: list[str] = []
-
-        usage = self.coordinator.data.usage.get(self.store)
-        critical = options.get(CONF_USAGE_CRITICAL, DEFAULT_USAGE_CRITICAL)
-        if usage:
-            if usage.error:
-                reasons.append(f"datastore error: {usage.error}")
-            if usage.used_percent is not None and usage.used_percent >= critical:
-                reasons.append(f"usage {usage.used_percent:.1f}% >= {critical}%")
-
-        medium = self.entry.runtime_data.medium.data
-        data: DatastoreData | None = (
-            medium.datastores.get(self.store) if medium else None
+    def _findings(self) -> list[health.Finding]:
+        """Collect the findings that concern this datastore."""
+        return health.datastore_findings(
+            self.store,
+            self.coordinator.data,
+            self.entry.runtime_data.medium.data,
+            dict(self.entry.options),
         )
-        if data is None:
-            return reasons
-
-        gc_days = options.get(CONF_GC_WARNING_DAYS, DEFAULT_GC_WARNING_DAYS)
-        if data.gc:
-            if data.gc.state == "error":
-                reasons.append("last garbage collection failed")
-            if data.gc.still_bad:
-                reasons.append(f"{data.gc.still_bad} corrupt chunks left behind")
-            last_run = data.gc.last_run_endtime
-            if last_run is not None:
-                age = (dt_util.utcnow() - last_run).days
-                if age > gc_days:
-                    reasons.append(f"no garbage collection for {age} days")
-
-        if data.verify_failed:
-            reasons.append(f"{data.verify_failed} snapshots failed verification")
-
-        return reasons
 
     @property
     def is_on(self) -> bool:
-        """Return True when at least one reason applies."""
-        return bool(self._reasons())
+        """Return True when at least one finding applies."""
+        return bool(self._findings())
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Expose the reasons so notifications can quote them."""
-        return {"reasons": self._reasons()}
+        findings = self._findings()
+        return {
+            "status": health.worst(findings),
+            "reasons": [finding.message for finding in findings],
+        }
+
+
+class PbsBackupStaleSensor(PbsGroupEntity, BinarySensorEntity):
+    """Whether a backup group's newest backup is older than the threshold."""
+
+    _attr_device_class = BinarySensorDeviceClass.PROBLEM
+    _attr_translation_key = "backup_stale"
+
+    def __init__(
+        self, entry: PbsConfigEntry, coordinator, store: str, stats: GroupStats
+    ) -> None:
+        """Set up the staleness sensor for one group."""
+        super().__init__(entry, coordinator, store, stats, "backup_stale")
+
+    @property
+    def is_on(self) -> bool:
+        """Return True when the newest backup is too old, or missing."""
+        stats = self.stats
+        if stats is None:
+            return False
+        age = stats.age_days
+        if age is None:
+            return True
+        return age > self.entry.options.get(CONF_STALE_DAYS, DEFAULT_STALE_DAYS)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Expose the age and the threshold it was compared against."""
+        stats = self.stats
+        return {
+            "age_days": stats.age_days if stats else None,
+            "threshold_days": self.entry.options.get(
+                CONF_STALE_DAYS, DEFAULT_STALE_DAYS
+            ),
+        }

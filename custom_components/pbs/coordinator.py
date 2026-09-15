@@ -112,6 +112,8 @@ class GroupStats:
     backup_type: str
     backup_id: str
     namespace: str
+    last_backup: datetime | None = None
+    owner: str | None = None
     snapshot_count: int = 0
     total_size: int | None = None
     verify_ok: int = 0
@@ -132,6 +134,26 @@ class GroupStats:
         if self.verify_ok:
             return "partial"
         return "none"
+
+    @property
+    def display_name(self) -> str:
+        """Return the device name for this group.
+
+        PVE writes the guest name into the snapshot comment through its
+        notes-template, which is far more useful than a bare VMID. The type and
+        id stay in the name so the device can still be matched against PVE.
+        """
+        if self.label:
+            return f"{self.label} ({self.backup_type.upper()} {self.backup_id})"
+        return f"{self.backup_type.capitalize()} {self.backup_id}"
+
+    @property
+    def age_days(self) -> float | None:
+        """Return the age of the newest backup in days."""
+        if self.last_backup is None:
+            return None
+        delta = datetime.now(UTC) - self.last_backup
+        return round(delta.total_seconds() / 86400, 2)
 
 
 @dataclass(slots=True)
@@ -226,6 +248,14 @@ class MediumData:
             for task in self.failed_tasks
             if task.start_time is not None and task.start_time >= cutoff
         )
+
+    def all_groups(self) -> list[tuple[str, GroupStats]]:
+        """Return every backup group as (datastore, stats) across all stores."""
+        return [
+            (store, stats)
+            for store, data in self.datastores.items()
+            for stats in data.stats.values()
+        ]
 
     @property
     def last_failed_task(self) -> TaskInfo | None:
@@ -556,6 +586,8 @@ def _aggregate(
             backup_type=group.backup_type,
             backup_id=group.backup_id,
             namespace=group.namespace,
+            last_backup=group.last_backup,
+            owner=group.owner,
             label=group.comment,
         )
         for key, group in groups.items()
@@ -563,39 +595,50 @@ def _aggregate(
 
     for snapshot in snapshots:
         key = snapshot.group_key
-        stat = stats.get(key)
-        if stat is None:
+        if key not in stats:
             # A group that appeared between the two calls. Track it anyway.
-            stat = stats[key] = GroupStats(
+            stats[key] = GroupStats(
                 key=key,
                 backup_type=snapshot.backup_type,
                 backup_id=snapshot.backup_id,
                 namespace=snapshot.namespace,
+                owner=snapshot.owner,
             )
+        _fold_snapshot(stats[key], snapshot)
 
-        stat.snapshot_count += 1
-        if snapshot.size is not None:
-            stat.total_size = (stat.total_size or 0) + snapshot.size
-        if snapshot.protected:
-            stat.protected += 1
-
-        state = (snapshot.verify_state or "").lower()
-        if state == "ok":
-            stat.verify_ok += 1
-        elif state:
-            stat.verify_failed += 1
-        else:
-            stat.verify_none += 1
-
-        stamp = snapshot.backup_time
-        if stamp:
-            if stat.oldest is None or stamp < stat.oldest:
-                stat.oldest = stamp
-            if stat.newest is None or stamp > stat.newest:
-                stat.newest = stamp
-                # PVE writes the guest name into the snapshot comment via its
-                # notes-template, which makes a far better label than the VMID.
-                if snapshot.comment:
-                    stat.label = snapshot.comment
+    for stat in stats.values():
+        # A group seen only in the snapshot list has no last-backup from the
+        # groups endpoint; its newest snapshot is the same thing.
+        if stat.last_backup is None:
+            stat.last_backup = stat.newest
 
     return stats
+
+
+def _fold_snapshot(stat: GroupStats, snapshot: Snapshot) -> None:
+    """Add one snapshot to its group's running totals."""
+    stat.snapshot_count += 1
+    if snapshot.size is not None:
+        stat.total_size = (stat.total_size or 0) + snapshot.size
+    if snapshot.protected:
+        stat.protected += 1
+
+    state = (snapshot.verify_state or "").lower()
+    if state == "ok":
+        stat.verify_ok += 1
+    elif state:
+        stat.verify_failed += 1
+    else:
+        stat.verify_none += 1
+
+    stamp = snapshot.backup_time
+    if stamp is None:
+        return
+    if stat.oldest is None or stamp < stat.oldest:
+        stat.oldest = stamp
+    if stat.newest is None or stamp > stat.newest:
+        stat.newest = stamp
+        # PVE writes the guest name into the snapshot comment via its
+        # notes-template, which makes a far better label than the VMID.
+        if snapshot.comment:
+            stat.label = snapshot.comment

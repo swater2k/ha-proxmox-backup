@@ -16,6 +16,11 @@ Aktionen kommen in Meilenstein 3.
 
 ## Installation
 
+> **Achtung bei Domain-Konflikten:** Diese Integration benutzt die Domain `pbs`
+> und den Ordner `custom_components/pbs/`. Die Integration
+> `thecodingdad/ha-proxmox-backup` benutzt `proxmox_backup` — beide lassen sich
+> parallel installieren, aber nicht zwei Integrationen mit derselben Domain.
+
 1. In HACS unter *Benutzerdefinierte Repositories* dieses Repository als Kategorie
    *Integration* hinzufügen.
 2. „Proxmox Backup Server" installieren, Home Assistant neu starten.
@@ -82,11 +87,28 @@ Startzeit, laufende Tasks, fehlgeschlagene Tasks (24 h / 7 d), letzter fehlgesch
 Task, Version, verfügbare Updates, Zertifikatsablauf, Subscription, Verbindung,
 Dienstproblem, Plattenproblem.
 
+**Gerät je Backup-Gruppe** (eine je LXC, VM oder Host): letztes Backup,
+Backup-Alter in Tagen, Snapshot-Anzahl, Größe, Verifizierungszustand, Besitzer
+und ein Problem-Sensor „Backup veraltet". Die Geräte heißen nach dem Gastnamen,
+den PVE über sein `notes-template` in die Snapshot-Notiz schreibt, also etwa
+`vaultwarden (CT 107)`. Fehlt die Notiz, bleibt es bei `Host pbs`. Neue Gruppen
+erscheinen beim nächsten Abruf von selbst, ohne Neustart.
+
 **Gerät je Datastore:** belegt / frei / gesamt, Belegung in Prozent, voraussichtlich voll,
 aktive Lese- und Schreibvorgänge, Backup-Gruppen, Snapshots, geprüfte / fehlgeschlagene /
 ungeprüfte Snapshots, ältester und neuester Snapshot, Deduplizierungsfaktor,
 GC-Zeitpunkt / -Status / -Dauer / -freigegeben / -ausstehend / -Zeitplan, GC läuft,
 Wartungsmodus, Sammelstatus „Problem" mit Begründungen als Attribut.
+
+**Gesamtstatus:** `sensor.<pbs>_gesamtstatus` fasst Belegung, Garbage
+Collection, Verifizierung, Backup-Frische, Jobs, Dienste und Platten zu einem
+Wert zusammen (`ok` / `warning` / `critical`); die Einzelbefunde stehen im
+Attribut `findings`. Dazu `binary_sensor.<pbs>_problem` für Automationen sowie
+Zähler für veraltete Gruppen und das älteste Backup.
+
+Je konfiguriertem Prune-, Verify- und Sync-Job entstehen zwei Sensoren am
+Datastore-Gerät: Ergebnis des letzten Laufs und dessen Zeitpunkt, mit Zeitplan
+und nächstem Lauf als Attribut.
 
 Selten gebrauchte Werte (Load 5/15, RAM gesamt, IO-Wait, fehlgeschlagene Tasks 7 d,
 GC ausstehend) sind standardmäßig deaktiviert und lassen sich pro Entität einschalten.
@@ -120,8 +142,8 @@ Schreibt jede API-Antwort nach `tests/fixtures/`; abgelehnte Endpunkte landen in
 
 - **M1 – erledigt:** API-Client, Config-Flow mit Datastore-Auswahl, Reauth und
   Reconfigure, drei Coordinatoren, Instanz- und Datastore-Entitäten, Diagnostics.
-- **M2:** Geräte je Backup-Gruppe, dynamisches Nachziehen neuer Gruppen, Job-Entitäten,
-  Gesamtstatus über alle Gruppen.
+- **M2 – erledigt:** Geräte je Backup-Gruppe mit Klarnamen, dynamisches Nachziehen
+  neuer Gruppen, Entfernen verwaister Geräte, Job-Entitäten, Gesamtstatus.
 - **M3:** Aktionen (GC, Verify, Prune, Forget, Jobs, Wartungsmodus) mit Task-Verfolgung
   und den beiden Sicherheitsschaltern.
 - **M4:** Repair-Issues bei fehlenden Rechten, Icon-Übersetzungen, eigener CA-Pfad.

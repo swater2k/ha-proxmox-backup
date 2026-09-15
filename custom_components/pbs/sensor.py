@@ -27,8 +27,16 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.typing import StateType
 
-from .coordinator import FastData, MediumData, PbsConfigEntry, SlowData
-from .entity import PbsDatastoreEntity, PbsInstanceEntity
+from . import health
+from .coordinator import (
+    FastData,
+    GroupStats,
+    JobStatus,
+    MediumData,
+    PbsConfigEntry,
+    SlowData,
+)
+from .entity import PbsDatastoreEntity, PbsGroupEntity, PbsInstanceEntity
 
 PARALLEL_UPDATES = 0
 
@@ -41,6 +49,8 @@ SUBSCRIPTION_STATES = [
     "unknown",
 ]
 GC_STATES = ["ok", "error", "unknown"]
+VERIFY_STATES = ["ok", "partial", "failed", "none"]
+JOB_STATES = ["ok", "error", "disabled", "unknown"]
 
 # Boot time is derived from an uptime counter, so it jitters by a second on
 # every poll. Only publish a new value when the drift is larger than this.
@@ -526,6 +536,71 @@ DATASTORE_SENSORS: tuple[PbsDatastoreSensorDescription, ...] = (
 )
 
 
+@dataclass(frozen=True, kw_only=True)
+class PbsGroupSensorDescription(SensorEntityDescription):
+    """Describes a backup group level sensor."""
+
+    value_fn: Callable[[GroupStats], StateType | datetime]
+    attributes_fn: Callable[[GroupStats], dict[str, Any]] | None = None
+
+
+GROUP_SENSORS: tuple[PbsGroupSensorDescription, ...] = (
+    PbsGroupSensorDescription(
+        key="last_backup",
+        translation_key="last_backup",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        value_fn=lambda stats: stats.last_backup,
+        attributes_fn=lambda stats: {
+            "oldest_snapshot": stats.oldest,
+            "protected_snapshots": stats.protected,
+            "namespace": stats.namespace or None,
+        },
+    ),
+    PbsGroupSensorDescription(
+        key="backup_age",
+        translation_key="backup_age",
+        native_unit_of_measurement=UnitOfTime.DAYS,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+        value_fn=lambda stats: stats.age_days,
+    ),
+    PbsGroupSensorDescription(
+        key="group_snapshots",
+        translation_key="group_snapshots",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda stats: stats.snapshot_count,
+    ),
+    PbsGroupSensorDescription(
+        key="group_size",
+        translation_key="group_size",
+        device_class=SensorDeviceClass.DATA_SIZE,
+        native_unit_of_measurement=UnitOfInformation.BYTES,
+        suggested_unit_of_measurement=UnitOfInformation.GIBIBYTES,
+        suggested_display_precision=1,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda stats: stats.total_size,
+    ),
+    PbsGroupSensorDescription(
+        key="group_verify_state",
+        translation_key="group_verify_state",
+        device_class=SensorDeviceClass.ENUM,
+        options=VERIFY_STATES,
+        value_fn=lambda stats: stats.verify_state,
+        attributes_fn=lambda stats: {
+            "verified": stats.verify_ok,
+            "failed": stats.verify_failed,
+            "unverified": stats.verify_none,
+        },
+    ),
+    PbsGroupSensorDescription(
+        key="group_owner",
+        translation_key="group_owner",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda stats: stats.owner,
+    ),
+)
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: PbsConfigEntry,
@@ -533,22 +608,62 @@ async def async_setup_entry(
 ) -> None:
     """Set up all sensors of one config entry."""
     runtime = entry.runtime_data
-    entities: list[SensorEntity] = []
-
-    for description in INSTANCE_SENSORS:
-        coordinator = runtime.coordinator(description.source)
-        entities.append(PbsSensor(entry, coordinator, description))
-
+    entities: list[SensorEntity] = [
+        PbsSensor(entry, runtime.coordinator(description.source), description)
+        for description in INSTANCE_SENSORS
+    ]
     entities.append(PbsBootTimeSensor(entry, runtime.fast))
+    entities.append(PbsOverallStatusSensor(entry, runtime.medium))
+    entities.append(PbsStaleGroupsSensor(entry, runtime.medium))
+    entities.append(PbsOldestBackupSensor(entry, runtime.medium))
 
     for store in runtime.medium.stores:
-        for datastore_description in DATASTORE_SENSORS:
-            coordinator = runtime.coordinator(datastore_description.source)
-            entities.append(
-                PbsDatastoreSensor(entry, coordinator, store, datastore_description)
+        entities.extend(
+            PbsDatastoreSensor(
+                entry, runtime.coordinator(description.source), store, description
             )
+            for description in DATASTORE_SENSORS
+        )
 
     async_add_entities(entities)
+
+    # Backup groups and jobs appear and disappear while the integration runs:
+    # a new LXC gets its device on the next poll, without a reload.
+    known_groups: set[tuple[str, str]] = set()
+    known_jobs: set[tuple[str, str]] = set()
+
+    @callback
+    def _async_add_dynamic() -> None:
+        medium = runtime.medium.data
+        if medium is None:
+            return
+        new: list[SensorEntity] = []
+
+        for store, data in medium.datastores.items():
+            for stats in data.stats.values():
+                ident = (store, stats.key)
+                if ident in known_groups:
+                    continue
+                known_groups.add(ident)
+                new.extend(
+                    PbsGroupSensor(entry, runtime.medium, store, stats, description)
+                    for description in GROUP_SENSORS
+                )
+
+        monitored = set(runtime.medium.stores)
+        for job in medium.jobs:
+            ident = (job.kind, job.job_id)
+            if ident in known_jobs or job.store not in monitored:
+                continue
+            known_jobs.add(ident)
+            new.append(PbsJobStateSensor(entry, runtime.medium, job))
+            new.append(PbsJobLastRunSensor(entry, runtime.medium, job))
+
+        if new:
+            async_add_entities(new)
+
+    _async_add_dynamic()
+    entry.async_on_unload(runtime.medium.async_add_listener(_async_add_dynamic))
 
 
 class PbsSensor(PbsInstanceEntity, SensorEntity):
@@ -611,6 +726,207 @@ class PbsDatastoreSensor(PbsDatastoreEntity, SensorEntity):
         if self.entity_description.attributes_fn is None:
             return None
         return self.entity_description.attributes_fn(self.coordinator.data, self.store)
+
+
+class PbsGroupSensor(PbsGroupEntity, SensorEntity):
+    """Sensor describing one backup group."""
+
+    entity_description: PbsGroupSensorDescription
+
+    def __init__(
+        self,
+        entry,
+        coordinator,
+        store: str,
+        stats: GroupStats,
+        description: PbsGroupSensorDescription,
+    ) -> None:
+        """Store the description and build the unique id from its key."""
+        super().__init__(entry, coordinator, store, stats, description.key)
+        self.entity_description = description
+
+    @property
+    def native_value(self) -> StateType | datetime:
+        """Return the current value."""
+        stats = self.stats
+        return self.entity_description.value_fn(stats) if stats else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return additional context for dashboards and automations."""
+        stats = self.stats
+        if stats is None or self.entity_description.attributes_fn is None:
+            return None
+        return self.entity_description.attributes_fn(stats)
+
+
+class PbsJobEntity(PbsDatastoreEntity):
+    """Base class for the configured prune, verify and sync jobs."""
+
+    def __init__(self, entry, coordinator, job: JobStatus, suffix: str) -> None:
+        """Bind the entity to the datastore the job works on."""
+        super().__init__(
+            entry, coordinator, job.store or "", f"job_{job.kind}_{job.job_id}_{suffix}"
+        )
+        self._kind = job.kind
+        self._job_id = job.job_id
+        self._attr_translation_placeholders = {
+            "kind": job.kind.capitalize(),
+            "job": job.job_id,
+        }
+
+    @property
+    def job(self) -> JobStatus | None:
+        """Return the current state of this job, if it still exists."""
+        return next(
+            (
+                job
+                for job in self.coordinator.data.jobs
+                if job.kind == self._kind and job.job_id == self._job_id
+            ),
+            None,
+        )
+
+    @property
+    def available(self) -> bool:
+        """Return False once the job was deleted on the server."""
+        return super().available and self.job is not None
+
+
+class PbsJobStateSensor(PbsJobEntity, SensorEntity):
+    """Result of the last run of one configured job."""
+
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = JOB_STATES
+    _attr_translation_key = "job_state"
+
+    def __init__(self, entry, coordinator, job: JobStatus) -> None:
+        """Set up the job state sensor."""
+        super().__init__(entry, coordinator, job, "state")
+
+    @property
+    def native_value(self) -> str | None:
+        """Return the normalised job state."""
+        job = self.job
+        return job.state if job else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Expose schedule and next run so automations can plan around them."""
+        job = self.job
+        if job is None:
+            return None
+        return {
+            "schedule": job.schedule,
+            "next_run": job.next_run,
+            "comment": job.comment,
+            "last_run_state": job.last_run_state,
+        }
+
+
+class PbsJobLastRunSensor(PbsJobEntity, SensorEntity):
+    """When one configured job last finished."""
+
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_translation_key = "job_last_run"
+
+    def __init__(self, entry, coordinator, job: JobStatus) -> None:
+        """Set up the job last run sensor."""
+        super().__init__(entry, coordinator, job, "last_run")
+
+    @property
+    def native_value(self) -> datetime | None:
+        """Return the end time of the last run."""
+        job = self.job
+        return job.last_run_endtime if job else None
+
+
+class PbsOverallStatusSensor(PbsInstanceEntity, SensorEntity):
+    """Aggregated status over the whole server.
+
+    The single entity to put on a dashboard: it folds space, garbage
+    collection, verification, backup freshness, jobs, services and disks into
+    one value, with the individual findings as an attribute.
+    """
+
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = health.OVERALL_STATES
+    _attr_translation_key = "overall_status"
+
+    def __init__(self, entry, coordinator) -> None:
+        """Set up the overall status sensor."""
+        super().__init__(entry, coordinator, "overall_status")
+
+    def _findings(self) -> list[health.Finding]:
+        """Collect every current finding across all three coordinators."""
+        runtime = self.entry.runtime_data
+        return health.instance_findings(
+            runtime.fast.data,
+            runtime.medium.data,
+            runtime.slow.data,
+            dict(self.entry.options),
+        )
+
+    @property
+    def native_value(self) -> str:
+        """Return ok, warning or critical."""
+        return health.worst(self._findings())
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Expose the reasons so a notification can quote them."""
+        findings = self._findings()
+        return {
+            "findings": [finding.message for finding in findings],
+            "warnings": sum(1 for f in findings if f.level == health.STATE_WARNING),
+            "critical": sum(1 for f in findings if f.level == health.STATE_CRITICAL),
+        }
+
+
+class PbsStaleGroupsSensor(PbsInstanceEntity, SensorEntity):
+    """How many backup groups have no recent backup."""
+
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_translation_key = "stale_groups"
+
+    def __init__(self, entry, coordinator) -> None:
+        """Set up the stale group counter."""
+        super().__init__(entry, coordinator, "stale_groups")
+
+    def _stale(self) -> list[health.Finding]:
+        """Return the findings for groups without a recent backup."""
+        return health.group_findings(self.coordinator.data, dict(self.entry.options))
+
+    @property
+    def native_value(self) -> int:
+        """Return the number of stale groups."""
+        return len(self._stale())
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Name the affected groups."""
+        return {"groups": [finding.message for finding in self._stale()]}
+
+
+class PbsOldestBackupSensor(PbsInstanceEntity, SensorEntity):
+    """The oldest of all the newest backups, across every group."""
+
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_translation_key = "oldest_backup"
+
+    def __init__(self, entry, coordinator) -> None:
+        """Set up the oldest backup sensor."""
+        super().__init__(entry, coordinator, "oldest_backup")
+
+    @property
+    def native_value(self) -> datetime | None:
+        """Return the least recent last-backup timestamp."""
+        stamps = [
+            stats.last_backup
+            for _store, stats in self.coordinator.data.all_groups()
+            if stats.last_backup is not None
+        ]
+        return min(stamps) if stamps else None
 
 
 class PbsBootTimeSensor(PbsInstanceEntity, SensorEntity):
