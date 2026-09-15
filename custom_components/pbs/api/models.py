@@ -59,6 +59,9 @@ def as_timestamp(value: Any) -> datetime | None:
         return None
 
 
+# Values PBS uses for the task lifecycle rather than for its result.
+_LIFECYCLE = {"running", "stopped"}
+
 _ESCAPE_RE = re.compile(r"\\+x([0-9a-fA-F]{2})")
 
 
@@ -314,10 +317,18 @@ class TaskInfo:
     start_time: datetime | None
     end_time: datetime | None
     status: str | None
+    exit_status: str | None
 
     @classmethod
     def from_api(cls, raw: dict[str, Any]) -> TaskInfo:
-        """Build from the raw payload."""
+        """Build from the raw payload.
+
+        Two endpoints deliver tasks and they disagree on what ``status`` means.
+        The task list puts the outcome there ("OK", "WARNINGS: 3", an error
+        text). The per-task status endpoint puts the lifecycle there
+        ("running", "stopped") and carries the outcome in ``exitstatus``.
+        Both are kept, and ``outcome`` picks whichever actually holds one.
+        """
         return cls(
             upid=raw.get("upid") or "",
             worker_type=raw.get("type") or raw.get("worker_type"),
@@ -326,6 +337,7 @@ class TaskInfo:
             start_time=as_timestamp(raw.get("starttime")),
             end_time=as_timestamp(raw.get("endtime")),
             status=raw.get("status"),
+            exit_status=raw.get("exitstatus"),
         )
 
     @property
@@ -334,26 +346,38 @@ class TaskInfo:
         return unescape_worker_id(self.worker_id)
 
     @property
-    def is_running(self) -> bool:
-        """Return True while the task has not finished.
+    def outcome(self) -> str | None:
+        """Return how the task ended, or None while that is not known yet.
 
-        PBS reports a running task either without a status at all or with the
-        literal string ``running``, depending on the endpoint.
+        ``running`` and ``stopped`` are lifecycle values, not outcomes: a task
+        that merely says ``stopped`` finished without reporting how.
         """
-        if self.end_time is not None:
+        if self.exit_status:
+            return self.exit_status
+        if self.status and self.status.lower() not in _LIFECYCLE:
+            return self.status
+        return None
+
+    @property
+    def is_running(self) -> bool:
+        """Return True while the task has not finished."""
+        status = (self.status or "").lower()
+        if status == "running":
+            return True
+        if status == "stopped" or self.exit_status:
             return False
-        return self.status is None or self.status.lower() == "running"
+        return self.end_time is None and not self.status
 
     @property
     def is_failed(self) -> bool:
-        """Return True for a finished task that did not end with OK.
+        """Return True for a task that reported anything other than success.
 
         PBS reports warnings as ``WARNINGS: 3`` and success as ``OK``; anything
-        else is an error string.
+        else is an error string. A task with no reported outcome is not a
+        failure, it is simply unknown.
         """
-        if self.status is None:
-            return False
-        return not self.status.startswith("OK")
+        outcome = self.outcome
+        return outcome is not None and not outcome.startswith("OK")
 
     @property
     def description(self) -> str:

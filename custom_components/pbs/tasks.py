@@ -104,15 +104,18 @@ class PbsTaskTracker:
                 continue
 
             del self._watching[upid]
-            state = "ok" if not task.is_failed else "error"
-            finished = task.end_time or dt_util.utcnow()
+            outcome = task.outcome
+            state = None if outcome is None else ("error" if task.is_failed else "ok")
             self.last = {
                 **context,
+                # PBS knows when the task really started; the tracked time is
+                # only when the button was pressed.
+                "started": task.start_time or context["started"],
                 "state": state,
-                "finished": finished,
-                "status": task.status,
+                "finished": task.end_time or dt_util.utcnow(),
+                "status": outcome,
             }
-            LOGGER.debug("Task %s finished: %s", upid, task.status)
+            LOGGER.debug("Task %s finished: %s", upid, outcome)
 
             self.hass.bus.async_fire(
                 EVENT_TASK_FINISHED,
@@ -123,7 +126,7 @@ class PbsTaskTracker:
                     "target": context["target"],
                     "datastore": context["store"],
                     "state": state,
-                    "status": task.status,
+                    "status": outcome,
                 },
             )
 
