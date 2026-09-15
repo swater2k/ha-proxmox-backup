@@ -21,7 +21,7 @@ rules:
   docs-installation-instructions: done
   docs-removal-instructions: done
   docs-actions: todo # milestone 3
-  brands: todo # needs a PR against home-assistant/brands
+  brands: done # local brand assets; a PR to home-assistant/brands is still open
 
   # Silver
   config-entry-unloading: done
