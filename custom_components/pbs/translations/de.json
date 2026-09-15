@@ -337,12 +337,22 @@
   "services": {
     "run_garbage_collection": {
       "name": "Garbage Collection starten",
-      "description": "Gibt den Platz von Chunks frei, die kein Snapshot mehr referenziert."
+      "description": "Gibt den Platz von Chunks frei, die kein Snapshot mehr referenziert.",
+      "fields": {
+        "device_id": {
+          "name": "Gerät",
+          "description": "Das Gerät des Proxmox Backup Servers, auf das die Aktion wirkt."
+        }
+      }
     },
     "verify": {
       "name": "Verifizieren",
       "description": "Prüft die Prüfsummen der Snapshots. Ziel Datastore für alles, Ziel Backup-Gruppe für einen Gast.",
       "fields": {
+        "device_id": {
+          "name": "Gerät",
+          "description": "Das Gerät des Proxmox Backup Servers, auf das die Aktion wirkt."
+        },
         "ignore_verified": {
           "name": "Geprüfte überspringen",
           "description": "Bereits bestandene Snapshots auslassen."
@@ -357,6 +367,10 @@
       "name": "Prune",
       "description": "Wendet eine Aufbewahrungsregel auf eine Backup-Gruppe an. Standardmäßig ein Probelauf, der nur meldet, was ein echter Lauf löschen würde.",
       "fields": {
+        "device_id": {
+          "name": "Gerät",
+          "description": "Das Gerät des Proxmox Backup Servers, auf das die Aktion wirkt."
+        },
         "dry_run": {
           "name": "Probelauf",
           "description": "Nur melden, nichts löschen."
@@ -391,6 +405,10 @@
       "name": "Backup-Gruppe löschen",
       "description": "Löscht eine Backup-Gruppe samt aller Snapshots. Unwiderruflich.",
       "fields": {
+        "device_id": {
+          "name": "Gerät",
+          "description": "Das Gerät des Proxmox Backup Servers, auf das die Aktion wirkt."
+        },
         "confirm": {
           "name": "Bestätigen",
           "description": "Muss an sein; schützt vor einem versehentlichen Aufruf."
@@ -401,6 +419,10 @@
       "name": "Snapshot löschen",
       "description": "Löscht einen einzelnen Snapshot einer Backup-Gruppe. Unwiderruflich.",
       "fields": {
+        "device_id": {
+          "name": "Gerät",
+          "description": "Das Gerät des Proxmox Backup Servers, auf das die Aktion wirkt."
+        },
         "backup_time": {
           "name": "Snapshot-Zeitpunkt",
           "description": "Zeitpunkt des zu löschenden Snapshots."
@@ -415,6 +437,10 @@
       "name": "Snapshot schützen",
       "description": "Schützt einen Snapshot vor dem Pruning oder hebt den Schutz auf.",
       "fields": {
+        "device_id": {
+          "name": "Gerät",
+          "description": "Das Gerät des Proxmox Backup Servers, auf das die Aktion wirkt."
+        },
         "backup_time": {
           "name": "Snapshot-Zeitpunkt",
           "description": "Zeitpunkt des Snapshots."

@@ -47,6 +47,9 @@ ATTR_PROTECTED = "protected"
 ATTR_IGNORE_VERIFIED = "ignore_verified"
 ATTR_OUTDATED_AFTER = "outdated_after"
 
+# The device arrives as a plain field, not through a target block: Home
+# Assistant removed device filters from target selectors, and an unfiltered
+# target picker would offer every device in the house.
 TARGET_SCHEMA = vol.Schema(
     {vol.Required(ATTR_DEVICE_ID): vol.All(cv.ensure_list, [cv.string])},
     extra=vol.ALLOW_EXTRA,

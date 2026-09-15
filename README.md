@@ -136,7 +136,7 @@ would be one heartbeat away from irreversible loss, and Home Assistant does not
 ask for confirmation on a button press. They are available only as actions with
 mandatory parameters:
 
-| Action | Target | Note |
+| Action | Device | Note |
 |---|---|---|
 | `pbs.run_garbage_collection` | Datastore | — |
 | `pbs.verify` | Datastore or group | can skip already verified snapshots |
@@ -154,9 +154,8 @@ rejected, because it would remove everything.
 
 ```yaml
 action: pbs.prune
-target:
-  device_id: <device of the backup group>
 data:
+  device_id: <device id of the backup group>
   dry_run: true
   keep_last: 3
   keep_daily: 7

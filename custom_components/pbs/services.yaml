@@ -1,18 +1,33 @@
+# Targets are passed as a device_id field rather than a target block:
+# Home Assistant removed device filters from target selectors, and without a
+# filter the picker would offer every device in the house.
+
 run_garbage_collection:
-  target:
-    device:
-      integration: pbs
-      model: PBS Datastore
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          filter:
+            - integration: pbs
+              model: PBS Datastore
+          multiple: true
 
 verify:
-  target:
-    device:
-      integration: pbs
   fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          filter:
+            - integration: pbs
+              model: PBS Datastore
+            - integration: pbs
+              model: PBS Backup Group
+          multiple: true
     ignore_verified:
       selector:
         boolean:
-      default: true
     outdated_after:
       selector:
         number:
@@ -22,13 +37,16 @@ verify:
           mode: box
 
 prune:
-  target:
-    device:
-      integration: pbs
-      model: PBS Backup Group
   fields:
-    dry_run:
+    device_id:
       required: true
+      selector:
+        device:
+          filter:
+            - integration: pbs
+              model: PBS Backup Group
+          multiple: true
+    dry_run:
       default: true
       selector:
         boolean:
@@ -70,45 +88,54 @@ prune:
           mode: box
 
 forget_group:
-  target:
-    device:
-      integration: pbs
-      model: PBS Backup Group
   fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          filter:
+            - integration: pbs
+              model: PBS Backup Group
+          multiple: true
     confirm:
       required: true
-      default: false
       selector:
         boolean:
 
 forget_snapshot:
-  target:
-    device:
-      integration: pbs
-      model: PBS Backup Group
   fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          filter:
+            - integration: pbs
+              model: PBS Backup Group
+          multiple: true
     backup_time:
       required: true
       selector:
         datetime:
     confirm:
       required: true
-      default: false
       selector:
         boolean:
 
 set_protected:
-  target:
-    device:
-      integration: pbs
-      model: PBS Backup Group
   fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          filter:
+            - integration: pbs
+              model: PBS Backup Group
+          multiple: true
     backup_time:
       required: true
       selector:
         datetime:
     protected:
-      required: true
       default: true
       selector:
         boolean:

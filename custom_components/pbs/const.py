@@ -52,7 +52,6 @@ TASK_HISTORY_LIMIT: Final = 500
 # actions
 SERVICE_RUN_GC: Final = "run_garbage_collection"
 SERVICE_VERIFY: Final = "verify"
-SERVICE_RUN_JOB: Final = "run_job"
 SERVICE_PRUNE: Final = "prune"
 SERVICE_FORGET_GROUP: Final = "forget_group"
 SERVICE_FORGET_SNAPSHOT: Final = "forget_snapshot"

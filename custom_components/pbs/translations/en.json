@@ -337,12 +337,22 @@
   "services": {
     "run_garbage_collection": {
       "name": "Start garbage collection",
-      "description": "Frees the space of chunks no snapshot references any more."
+      "description": "Frees the space of chunks no snapshot references any more.",
+      "fields": {
+        "device_id": {
+          "name": "Device",
+          "description": "The Proxmox Backup Server device to act on."
+        }
+      }
     },
     "verify": {
       "name": "Verify",
       "description": "Checks snapshot checksums. Target a datastore for all of it, or a backup group for one guest.",
       "fields": {
+        "device_id": {
+          "name": "Device",
+          "description": "The Proxmox Backup Server device to act on."
+        },
         "ignore_verified": {
           "name": "Skip verified",
           "description": "Leave out snapshots that already passed."
@@ -357,6 +367,10 @@
       "name": "Prune",
       "description": "Applies a retention rule to a backup group. Dry run by default; it then only reports what a real run would delete.",
       "fields": {
+        "device_id": {
+          "name": "Device",
+          "description": "The Proxmox Backup Server device to act on."
+        },
         "dry_run": {
           "name": "Dry run",
           "description": "Only report, delete nothing."
@@ -391,6 +405,10 @@
       "name": "Delete backup group",
       "description": "Deletes a backup group including every snapshot. Irreversible.",
       "fields": {
+        "device_id": {
+          "name": "Device",
+          "description": "The Proxmox Backup Server device to act on."
+        },
         "confirm": {
           "name": "Confirm",
           "description": "Must be on; guards against an accidental call."
@@ -401,6 +419,10 @@
       "name": "Delete snapshot",
       "description": "Deletes a single snapshot of a backup group. Irreversible.",
       "fields": {
+        "device_id": {
+          "name": "Device",
+          "description": "The Proxmox Backup Server device to act on."
+        },
         "backup_time": {
           "name": "Snapshot time",
           "description": "Time of the snapshot to delete."
@@ -415,6 +437,10 @@
       "name": "Protect snapshot",
       "description": "Protects a snapshot against pruning, or removes that protection.",
       "fields": {
+        "device_id": {
+          "name": "Device",
+          "description": "The Proxmox Backup Server device to act on."
+        },
         "backup_time": {
           "name": "Snapshot time",
           "description": "Time of the snapshot."
