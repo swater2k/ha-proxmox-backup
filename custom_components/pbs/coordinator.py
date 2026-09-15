@@ -49,6 +49,8 @@ from .const import (
     CAP_SUBSCRIPTION,
     CAP_TASKS,
     CAP_UPDATES,
+    CONF_ALLOW_DESTRUCTIVE,
+    CONF_ALLOW_WRITE,
     CONF_DATASTORES,
     LOGGER,
     SCAN_INTERVAL_FAST,
@@ -58,6 +60,7 @@ from .const import (
     SNAPSHOT_THROTTLE_LIMIT,
     TASK_HISTORY_LIMIT,
 )
+from .tasks import PbsTaskTracker
 
 
 class Capabilities:
@@ -566,7 +569,21 @@ class PbsRuntimeData:
     fast: PbsFastCoordinator
     medium: PbsMediumCoordinator
     slow: PbsSlowCoordinator
+    tasks: PbsTaskTracker
     root_id: str
+
+    @property
+    def allow_write(self) -> bool:
+        """Return whether write actions were enabled in the options."""
+        return bool(self.medium.entry.options.get(CONF_ALLOW_WRITE, False))
+
+    @property
+    def allow_destructive(self) -> bool:
+        """Return whether prune and forget were enabled in the options."""
+        return bool(
+            self.allow_write
+            and self.medium.entry.options.get(CONF_ALLOW_DESTRUCTIVE, False)
+        )
 
     def coordinator(self, source: str) -> PbsBaseCoordinator[Any]:
         """Return a coordinator by the name used in entity descriptions."""

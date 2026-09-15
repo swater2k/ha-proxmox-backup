@@ -51,6 +51,7 @@ SUBSCRIPTION_STATES = [
 GC_STATES = ["ok", "error", "unknown"]
 VERIFY_STATES = ["ok", "partial", "failed", "none"]
 JOB_STATES = ["ok", "error", "disabled", "unknown"]
+ACTION_STATES = ["running", "ok", "error"]
 
 # Boot time is derived from an uptime counter, so it jitters by a second on
 # every poll. Only publish a new value when the drift is larger than this.
@@ -616,6 +617,7 @@ async def async_setup_entry(
     entities.append(PbsOverallStatusSensor(entry, runtime.medium))
     entities.append(PbsStaleGroupsSensor(entry, runtime.medium))
     entities.append(PbsOldestBackupSensor(entry, runtime.medium))
+    entities.append(PbsLastActionSensor(entry, runtime.fast))
 
     for store in runtime.medium.stores:
         entities.extend(
@@ -971,3 +973,48 @@ class PbsBootTimeSensor(PbsInstanceEntity, SensorEntity):
             if node is not None and node.uptime is not None:
                 self._value = datetime.now(UTC) - timedelta(seconds=node.uptime)
         return self._value
+
+
+class PbsLastActionSensor(PbsInstanceEntity, SensorEntity):
+    """Outcome of the last action this integration triggered.
+
+    Subscribes to the task tracker as well as the coordinator, so it flips to
+    running the moment a button is pressed instead of at the next poll.
+    """
+
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = ACTION_STATES
+    _attr_translation_key = "last_action"
+
+    def __init__(self, entry, coordinator) -> None:
+        """Set up the last action sensor."""
+        super().__init__(entry, coordinator, "last_action")
+
+    async def async_added_to_hass(self) -> None:
+        """Listen to the task tracker on top of the coordinator."""
+        await super().async_added_to_hass()
+        self.async_on_remove(
+            self.entry.runtime_data.tasks.async_add_listener(self.async_write_ha_state)
+        )
+
+    @property
+    def native_value(self) -> str | None:
+        """Return running, ok or error for the most recent action."""
+        last = self.entry.runtime_data.tasks.last
+        return last["state"] if last else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Expose what was triggered, on what, and how it ended."""
+        last = self.entry.runtime_data.tasks.last
+        if not last:
+            return {}
+        return {
+            "action": last.get("action"),
+            "target": last.get("target"),
+            "datastore": last.get("store"),
+            "started": last.get("started"),
+            "finished": last.get("finished"),
+            "upid": last.get("upid"),
+            "status": last.get("status"),
+        }

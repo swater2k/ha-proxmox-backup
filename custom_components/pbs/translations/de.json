@@ -105,6 +105,9 @@
       },
       "backup_stale": {
         "name": "Backup veraltet"
+      },
+      "action_running": {
+        "name": "Aktion läuft"
       }
     },
     "sensor": {
@@ -296,6 +299,130 @@
       },
       "oldest_backup": {
         "name": "Ältestes Backup"
+      },
+      "last_action": {
+        "name": "Letzte Aktion",
+        "state": {
+          "running": "Läuft",
+          "ok": "OK",
+          "error": "Fehler"
+        }
+      }
+    },
+    "button": {
+      "start_gc": {
+        "name": "Garbage Collection starten"
+      },
+      "verify_datastore": {
+        "name": "Datastore verifizieren"
+      },
+      "verify_group": {
+        "name": "Verifizieren"
+      },
+      "run_job": {
+        "name": "{kind}-Job {job} jetzt starten"
+      }
+    },
+    "select": {
+      "maintenance_mode": {
+        "name": "Wartungsmodus",
+        "state": {
+          "none": "Aus",
+          "read-only": "Nur lesen",
+          "offline": "Offline"
+        }
+      }
+    }
+  },
+  "services": {
+    "run_garbage_collection": {
+      "name": "Garbage Collection starten",
+      "description": "Gibt den Platz von Chunks frei, die kein Snapshot mehr referenziert."
+    },
+    "verify": {
+      "name": "Verifizieren",
+      "description": "Prüft die Prüfsummen der Snapshots. Ziel Datastore für alles, Ziel Backup-Gruppe für einen Gast.",
+      "fields": {
+        "ignore_verified": {
+          "name": "Geprüfte überspringen",
+          "description": "Bereits bestandene Snapshots auslassen."
+        },
+        "outdated_after": {
+          "name": "Erneut prüfen nach",
+          "description": "Tage, nach denen ein bestandener Snapshot erneut geprüft wird."
+        }
+      }
+    },
+    "prune": {
+      "name": "Prune",
+      "description": "Wendet eine Aufbewahrungsregel auf eine Backup-Gruppe an. Standardmäßig ein Probelauf, der nur meldet, was ein echter Lauf löschen würde.",
+      "fields": {
+        "dry_run": {
+          "name": "Probelauf",
+          "description": "Nur melden, nichts löschen."
+        },
+        "keep_last": {
+          "name": "Letzte behalten",
+          "description": "Anzahl der neuesten Snapshots, die bleiben."
+        },
+        "keep_hourly": {
+          "name": "Stündlich behalten",
+          "description": "Anzahl Stunden, für die je ein Snapshot bleibt."
+        },
+        "keep_daily": {
+          "name": "Täglich behalten",
+          "description": "Anzahl Tage, für die je ein Snapshot bleibt."
+        },
+        "keep_weekly": {
+          "name": "Wöchentlich behalten",
+          "description": "Anzahl Wochen, für die je ein Snapshot bleibt."
+        },
+        "keep_monthly": {
+          "name": "Monatlich behalten",
+          "description": "Anzahl Monate, für die je ein Snapshot bleibt."
+        },
+        "keep_yearly": {
+          "name": "Jährlich behalten",
+          "description": "Anzahl Jahre, für die je ein Snapshot bleibt."
+        }
+      }
+    },
+    "forget_group": {
+      "name": "Backup-Gruppe löschen",
+      "description": "Löscht eine Backup-Gruppe samt aller Snapshots. Unwiderruflich.",
+      "fields": {
+        "confirm": {
+          "name": "Bestätigen",
+          "description": "Muss an sein; schützt vor einem versehentlichen Aufruf."
+        }
+      }
+    },
+    "forget_snapshot": {
+      "name": "Snapshot löschen",
+      "description": "Löscht einen einzelnen Snapshot einer Backup-Gruppe. Unwiderruflich.",
+      "fields": {
+        "backup_time": {
+          "name": "Snapshot-Zeitpunkt",
+          "description": "Zeitpunkt des zu löschenden Snapshots."
+        },
+        "confirm": {
+          "name": "Bestätigen",
+          "description": "Muss an sein; schützt vor einem versehentlichen Aufruf."
+        }
+      }
+    },
+    "set_protected": {
+      "name": "Snapshot schützen",
+      "description": "Schützt einen Snapshot vor dem Pruning oder hebt den Schutz auf.",
+      "fields": {
+        "backup_time": {
+          "name": "Snapshot-Zeitpunkt",
+          "description": "Zeitpunkt des Snapshots."
+        },
+        "protected": {
+          "name": "Geschützt",
+          "description": "An schützt, aus gibt frei."
+        }
       }
     }
   }

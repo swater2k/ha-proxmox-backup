@@ -49,6 +49,28 @@ SNAPSHOT_THROTTLE_EVERY: Final = 12
 FAILED_TASK_WINDOWS: Final = {"24h": 1, "7d": 7}
 TASK_HISTORY_LIMIT: Final = 500
 
+# actions
+SERVICE_RUN_GC: Final = "run_garbage_collection"
+SERVICE_VERIFY: Final = "verify"
+SERVICE_RUN_JOB: Final = "run_job"
+SERVICE_PRUNE: Final = "prune"
+SERVICE_FORGET_GROUP: Final = "forget_group"
+SERVICE_FORGET_SNAPSHOT: Final = "forget_snapshot"
+SERVICE_SET_PROTECTED: Final = "set_protected"
+
+EVENT_TASK_FINISHED: Final = "pbs_task_finished"
+EVENT_DESTRUCTIVE_ACTION: Final = "pbs_destructive_action"
+
+# How often a triggered task is polled while it runs. PBS worker tasks are
+# usually short; anything longer is better watched through the task sensor.
+TASK_POLL_INTERVAL: Final = timedelta(seconds=15)
+
+# Maintenance modes PBS accepts, plus the empty selection that clears it.
+MAINTENANCE_OFF: Final = "none"
+MAINTENANCE_MODES: Final = [MAINTENANCE_OFF, "read-only", "offline"]
+
+KEEP_WINDOWS: Final = ("last", "hourly", "daily", "weekly", "monthly", "yearly")
+
 # capability names used to remember which endpoints the token may not read
 CAP_NODE_STATUS: Final = "node_status"
 CAP_SERVICES: Final = "services"

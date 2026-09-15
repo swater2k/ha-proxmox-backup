@@ -31,6 +31,7 @@ async def async_setup_entry(
         PbsServiceProblemSensor(entry, runtime.slow),
         PbsDiskProblemSensor(entry, runtime.slow),
         PbsOverallProblemSensor(entry, runtime.medium),
+        PbsActionRunningSensor(entry, runtime.fast),
     ]
 
     for store in runtime.medium.stores:
@@ -319,3 +320,26 @@ class PbsBackupStaleSensor(PbsGroupEntity, BinarySensorEntity):
                 CONF_STALE_DAYS, DEFAULT_STALE_DAYS
             ),
         }
+
+
+class PbsActionRunningSensor(PbsInstanceEntity, BinarySensorEntity):
+    """Whether an action triggered from Home Assistant is still running."""
+
+    _attr_device_class = BinarySensorDeviceClass.RUNNING
+    _attr_translation_key = "action_running"
+
+    def __init__(self, entry: PbsConfigEntry, coordinator) -> None:
+        """Set up the action running sensor."""
+        super().__init__(entry, coordinator, "action_running")
+
+    async def async_added_to_hass(self) -> None:
+        """Listen to the task tracker on top of the coordinator."""
+        await super().async_added_to_hass()
+        self.async_on_remove(
+            self.entry.runtime_data.tasks.async_add_listener(self.async_write_ha_state)
+        )
+
+    @property
+    def is_on(self) -> bool:
+        """Return True while a triggered task is in progress."""
+        return self.entry.runtime_data.tasks.running

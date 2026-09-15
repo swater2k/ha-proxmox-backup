@@ -1,0 +1,114 @@
+run_garbage_collection:
+  target:
+    device:
+      integration: pbs
+      model: PBS Datastore
+
+verify:
+  target:
+    device:
+      integration: pbs
+  fields:
+    ignore_verified:
+      selector:
+        boolean:
+      default: true
+    outdated_after:
+      selector:
+        number:
+          min: 1
+          max: 365
+          unit_of_measurement: d
+          mode: box
+
+prune:
+  target:
+    device:
+      integration: pbs
+      model: PBS Backup Group
+  fields:
+    dry_run:
+      required: true
+      default: true
+      selector:
+        boolean:
+    keep_last:
+      selector:
+        number:
+          min: 0
+          max: 1000
+          mode: box
+    keep_hourly:
+      selector:
+        number:
+          min: 0
+          max: 1000
+          mode: box
+    keep_daily:
+      selector:
+        number:
+          min: 0
+          max: 1000
+          mode: box
+    keep_weekly:
+      selector:
+        number:
+          min: 0
+          max: 1000
+          mode: box
+    keep_monthly:
+      selector:
+        number:
+          min: 0
+          max: 1000
+          mode: box
+    keep_yearly:
+      selector:
+        number:
+          min: 0
+          max: 1000
+          mode: box
+
+forget_group:
+  target:
+    device:
+      integration: pbs
+      model: PBS Backup Group
+  fields:
+    confirm:
+      required: true
+      default: false
+      selector:
+        boolean:
+
+forget_snapshot:
+  target:
+    device:
+      integration: pbs
+      model: PBS Backup Group
+  fields:
+    backup_time:
+      required: true
+      selector:
+        datetime:
+    confirm:
+      required: true
+      default: false
+      selector:
+        boolean:
+
+set_protected:
+  target:
+    device:
+      integration: pbs
+      model: PBS Backup Group
+  fields:
+    backup_time:
+      required: true
+      selector:
+        datetime:
+    protected:
+      required: true
+      default: true
+      selector:
+        boolean:

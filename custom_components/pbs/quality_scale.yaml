@@ -15,19 +15,19 @@ rules:
   dependency-transparency:
     status: exempt
     comment: No third party requirements, the API client ships with the integration.
-  action-setup: todo # milestone 3
+  action-setup: done
   common-modules: done
   docs-high-level-description: done
   docs-installation-instructions: done
   docs-removal-instructions: done
-  docs-actions: todo # milestone 3
+  docs-actions: done
   brands: done # local brand assets; a PR to home-assistant/brands is still open
 
   # Silver
   config-entry-unloading: done
   log-when-unavailable: done # capability denials are logged once
   entity-unavailable: done
-  action-exceptions: todo # milestone 3
+  action-exceptions: done
   reauthentication-flow: done
   parallel-updates: done
   test-coverage: todo # milestone 5

@@ -313,6 +313,154 @@ class PbsClient:
             snapshots += as_int(value.get("snapshots"), 0) or 0
         return {"groups": groups, "snapshots": snapshots}
 
+    # ------------------------------------------------------------------
+    # actions
+    #
+    # Garbage collection, verify and job runs are asynchronous: PBS answers
+    # with a UPID and does the work in a worker task. Prune and forget answer
+    # synchronously, prune even returning what it would remove, which is what
+    # makes a dry run useful.
+    # ------------------------------------------------------------------
+
+    async def start_garbage_collection(self, store: str) -> str:
+        """Start a garbage collection run and return its UPID."""
+        return await self._post(f"{self._store_path(store)}/gc")
+
+    async def start_verify(
+        self,
+        store: str,
+        *,
+        namespace: str = "",
+        backup_type: str | None = None,
+        backup_id: str | None = None,
+        backup_time: int | None = None,
+        ignore_verified: bool | None = None,
+        outdated_after: int | None = None,
+    ) -> str:
+        """Start a verification run and return its UPID.
+
+        Without backup_type and backup_id the whole datastore is verified.
+        """
+        return await self._post(
+            f"{self._store_path(store)}/verify",
+            {
+                "ns": namespace or None,
+                "backup-type": backup_type,
+                "backup-id": backup_id,
+                "backup-time": backup_time,
+                "ignore-verified": ignore_verified,
+                "outdated-after": outdated_after,
+            },
+        )
+
+    async def run_job(self, kind: str, job_id: str) -> str:
+        """Start a configured prune, verify or sync job and return its UPID."""
+        if kind not in JOB_KINDS:
+            raise PbsApiError(f"Unknown job kind: {kind}")
+        return await self._post(f"/admin/{kind}/{quote(job_id, safe='')}/run")
+
+    async def prune_group(
+        self,
+        store: str,
+        backup_type: str,
+        backup_id: str,
+        *,
+        namespace: str = "",
+        dry_run: bool = True,
+        keep: dict[str, int] | None = None,
+    ) -> list[dict[str, Any]]:
+        """Prune one backup group.
+
+        Returns one entry per snapshot with a ``keep`` flag, so a dry run shows
+        exactly what a real run would delete.
+        """
+        payload: dict[str, Any] = {
+            "backup-type": backup_type,
+            "backup-id": backup_id,
+            "ns": namespace or None,
+            "dry-run": dry_run,
+        }
+        for window, count in (keep or {}).items():
+            payload[f"keep-{window}"] = count
+        result = await self._post(f"{self._store_path(store)}/prune", payload)
+        return result or []
+
+    async def forget_snapshot(
+        self,
+        store: str,
+        backup_type: str,
+        backup_id: str,
+        backup_time: int,
+        *,
+        namespace: str = "",
+    ) -> None:
+        """Delete a single snapshot. Irreversible."""
+        await self._request(
+            "DELETE",
+            f"{self._store_path(store)}/snapshots",
+            params={
+                "backup-type": backup_type,
+                "backup-id": backup_id,
+                "backup-time": backup_time,
+                "ns": namespace or None,
+            },
+            retry=False,
+        )
+
+    async def forget_group(
+        self,
+        store: str,
+        backup_type: str,
+        backup_id: str,
+        *,
+        namespace: str = "",
+    ) -> None:
+        """Delete a whole backup group with all of its snapshots. Irreversible."""
+        await self._request(
+            "DELETE",
+            f"{self._store_path(store)}/groups",
+            params={
+                "backup-type": backup_type,
+                "backup-id": backup_id,
+                "ns": namespace or None,
+            },
+            retry=False,
+        )
+
+    async def set_protected(
+        self,
+        store: str,
+        backup_type: str,
+        backup_id: str,
+        backup_time: int,
+        protected: bool,
+        *,
+        namespace: str = "",
+    ) -> None:
+        """Protect or unprotect one snapshot against pruning."""
+        await self._put(
+            f"{self._store_path(store)}/protected",
+            {
+                "backup-type": backup_type,
+                "backup-id": backup_id,
+                "backup-time": backup_time,
+                "protected": protected,
+                "ns": namespace or None,
+            },
+        )
+
+    async def set_maintenance(self, store: str, mode: str | None) -> None:
+        """Set or clear the maintenance mode of a datastore."""
+        if mode:
+            await self._put(
+                f"/config/datastore/{quote(store, safe='')}", {"maintenance-mode": mode}
+            )
+        else:
+            await self._put(
+                f"/config/datastore/{quote(store, safe='')}",
+                {"delete": ["maintenance-mode"]},
+            )
+
     async def get_jobs(self) -> list[JobStatus]:
         """Return configured prune, verify and sync jobs with their last result."""
         jobs: list[JobStatus] = []

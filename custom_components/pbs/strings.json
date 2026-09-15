@@ -105,6 +105,9 @@
       },
       "backup_stale": {
         "name": "Backup stale"
+      },
+      "action_running": {
+        "name": "Action running"
       }
     },
     "sensor": {
@@ -296,6 +299,130 @@
       },
       "oldest_backup": {
         "name": "Oldest backup"
+      },
+      "last_action": {
+        "name": "Last action",
+        "state": {
+          "running": "Running",
+          "ok": "OK",
+          "error": "Error"
+        }
+      }
+    },
+    "button": {
+      "start_gc": {
+        "name": "Start garbage collection"
+      },
+      "verify_datastore": {
+        "name": "Verify datastore"
+      },
+      "verify_group": {
+        "name": "Verify"
+      },
+      "run_job": {
+        "name": "{kind} job {job} run now"
+      }
+    },
+    "select": {
+      "maintenance_mode": {
+        "name": "Maintenance mode",
+        "state": {
+          "none": "Off",
+          "read-only": "Read-only",
+          "offline": "Offline"
+        }
+      }
+    }
+  },
+  "services": {
+    "run_garbage_collection": {
+      "name": "Start garbage collection",
+      "description": "Frees the space of chunks no snapshot references any more."
+    },
+    "verify": {
+      "name": "Verify",
+      "description": "Checks snapshot checksums. Target a datastore for all of it, or a backup group for one guest.",
+      "fields": {
+        "ignore_verified": {
+          "name": "Skip verified",
+          "description": "Leave out snapshots that already passed."
+        },
+        "outdated_after": {
+          "name": "Re-check after",
+          "description": "Days after which a passed snapshot is checked again."
+        }
+      }
+    },
+    "prune": {
+      "name": "Prune",
+      "description": "Applies a retention rule to a backup group. Dry run by default; it then only reports what a real run would delete.",
+      "fields": {
+        "dry_run": {
+          "name": "Dry run",
+          "description": "Only report, delete nothing."
+        },
+        "keep_last": {
+          "name": "Keep last",
+          "description": "Number of most recent snapshots to keep."
+        },
+        "keep_hourly": {
+          "name": "Keep hourly",
+          "description": "Number of hours to keep one snapshot each."
+        },
+        "keep_daily": {
+          "name": "Keep daily",
+          "description": "Number of days to keep one snapshot each."
+        },
+        "keep_weekly": {
+          "name": "Keep weekly",
+          "description": "Number of weeks to keep one snapshot each."
+        },
+        "keep_monthly": {
+          "name": "Keep monthly",
+          "description": "Number of months to keep one snapshot each."
+        },
+        "keep_yearly": {
+          "name": "Keep yearly",
+          "description": "Number of years to keep one snapshot each."
+        }
+      }
+    },
+    "forget_group": {
+      "name": "Delete backup group",
+      "description": "Deletes a backup group including every snapshot. Irreversible.",
+      "fields": {
+        "confirm": {
+          "name": "Confirm",
+          "description": "Must be on; guards against an accidental call."
+        }
+      }
+    },
+    "forget_snapshot": {
+      "name": "Delete snapshot",
+      "description": "Deletes a single snapshot of a backup group. Irreversible.",
+      "fields": {
+        "backup_time": {
+          "name": "Snapshot time",
+          "description": "Time of the snapshot to delete."
+        },
+        "confirm": {
+          "name": "Confirm",
+          "description": "Must be on; guards against an accidental call."
+        }
+      }
+    },
+    "set_protected": {
+      "name": "Protect snapshot",
+      "description": "Protects a snapshot against pruning, or removes that protection.",
+      "fields": {
+        "backup_time": {
+          "name": "Snapshot time",
+          "description": "Time of the snapshot."
+        },
+        "protected": {
+          "name": "Protected",
+          "description": "On protects, off releases."
+        }
       }
     }
   }

@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_VERIFY_SSL, Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.typing import ConfigType
 
 from .api import PbsClient
 from .const import (
@@ -23,8 +25,23 @@ from .coordinator import (
     PbsRuntimeData,
     PbsSlowCoordinator,
 )
+from .services import async_setup_services
+from .tasks import PbsTaskTracker
 
-PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR]
+PLATFORMS: list[Platform] = [
+    Platform.BINARY_SENSOR,
+    Platform.BUTTON,
+    Platform.SELECT,
+    Platform.SENSOR,
+]
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Register the actions once, independently of any config entry."""
+    async_setup_services(hass)
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: PbsConfigEntry) -> bool:
@@ -40,6 +57,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: PbsConfigEntry) -> bool:
         entry.data[CONF_TOKEN_SECRET],
     )
     capabilities = Capabilities()
+    tasks = PbsTaskTracker(hass, client, entry.title)
 
     fast = PbsFastCoordinator(hass, entry, client, capabilities)
     medium = PbsMediumCoordinator(hass, entry, client, capabilities)
@@ -51,8 +69,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: PbsConfigEntry) -> bool:
         fast=fast,
         medium=medium,
         slow=slow,
+        tasks=tasks,
         root_id=entry.unique_id or entry.entry_id,
     )
+    entry.async_on_unload(tasks.async_shutdown)
 
     # The slow coordinator runs first: its version information becomes the
     # sw_version of the device, which is read while the platforms are set up.
