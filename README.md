@@ -15,11 +15,6 @@ forget, protect, maintenance mode, and running configured jobs.
 
 ## Installation
 
-> **Watch out for domain conflicts:** this integration uses the domain `pbs` and
-> the folder `custom_components/pbs/`. The integration
-> `thecodingdad/ha-proxmox-backup` uses `proxmox_backup` — the two can be
-> installed side by side, but never two integrations sharing one domain.
-
 1. In HACS, add this repository under *Custom repositories* with the category
    *Integration*.
 2. Download "Proxmox Backup Server" and restart Home Assistant.
@@ -206,19 +201,6 @@ The size of a backup group is the **logical** sum of all its snapshots, not the
 space occupied on disk. Nine nearly identical snapshots share their chunks, so the
 sum over all groups is a multiple of what the datastore actually uses. The
 deduplication factor on the datastore device shows the ratio.
-
-## Development
-
-Capture test data from your own instance:
-
-```bash
-python3 scripts/dump_fixtures.py \
-  --host 192.168.178.138 --token-id 'ha@pbs!homeassistant' \
-  --token-secret '…' --insecure
-```
-
-This writes every API response to `tests/fixtures/`; denied endpoints land in
-`_errors.json`. Those files are the basis for the unit tests.
 
 ## Status
 
