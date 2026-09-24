@@ -11,14 +11,14 @@ jobs:
     name: hassfest
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: home-assistant/actions/hassfest@master
 
   hacs:
     name: HACS
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: hacs/action@main
         with:
           category: integration
@@ -27,7 +27,12 @@ jobs:
     name: ruff
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/ruff-action@v3
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
-          args: check --output-format=github
+          python-version: "3.13"
+      # Pinned on purpose: a new ruff release introducing a rule should not
+      # turn this workflow red on an unrelated push.
+      - run: pip install ruff==0.16.7
+      - run: ruff check --output-format=github .
+      - run: ruff format --check .
